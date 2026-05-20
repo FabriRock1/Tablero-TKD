@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SMTKD - Mando de Juez</title>
+    <title>SMTKD - Mando Virtual de Juez</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Teko:wght@700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         body { background: #050508; color: #fff; font-family: 'Orbitron', sans-serif; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
         
         .header-mando { height: 8vh; background: #0a0c14; display: flex; justify-content: space-between; align-items: center; padding: 0 15px; border-bottom: 2px solid #222; }
-        .titulo-mando { font-size: 14px; color: #ffd600; font-weight: 900; }
-        select { background: #151826; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 4px; font-size: 12px; }
+        .titulo-mando { font-size: 14px; color: #ffd600; font-weight: 900; letter-spacing: 1px; }
+        select { background: #151826; color: #fff; border: 1px solid #444; padding: 5px; border-radius: 4px; font-size: 12px; font-family: 'Orbitron'; font-weight: bold; }
         
         .contenedor-botones { display: flex; height: 92vh; width: 100vw; }
         .bando-mobile { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 10px; height: 100%; }
@@ -28,13 +28,89 @@
             border-radius: 12px;
             color: white;
             font-family: 'Teko', sans-serif;
-            font-size: 32px;
+            font-size: 38px;
             font-weight: bold;
             text-shadow: 0 2px 4px rgba(0,0,0,0.6);
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.1), 0 4px 8px rgba(0,0,0,0.4);
-            active-state { transform: scale(0.98); filter: brightness(1.3); }
+            transition: transform 0.05s ease;
         }
         
+        .rojo .btn-mobile { background: #a7131f; border-bottom: 5px solid #5c070c; }
+        .azul .btn-mobile { background: #0b3c75; border-bottom: 5px solid #051d3b; }
+        
+        .rojo .btn-mobile:active { background: #ff3344; transform: scale(0.96); }
+        .azul .btn-mobile:active { background: #00ddff; transform: scale(0.96); }
+        
+        .btn-subtext { font-family: 'Orbitron'; font-size: 11px; display: block; opacity: 0.6; font-weight: bold; letter-spacing: 1px; }
+        .btn-content { text-align: center; line-height: 0.85; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header-mando">
+        <div class="titulo-mando">SMTKD VIRTUAL PAD</div>
+        <div>
+            <select id="select-juez">
+                <option value="0">JUEZ 1 (J1)</option>
+                <option value="1">JUEZ 2 (J2)</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="contenedor-botones">
+        <div class="bando-mobile rojo">
+            <button class="btn-mobile" onclick="enviarVoto('rojo', 1, 'punio')"><div class="btn-content">+1<span class="btn-subtext">PUÑO</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('rojo', 2, 'peto')"><div class="btn-content">+2<span class="btn-subtext">PETO</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('rojo', 3, 'casco')"><div class="btn-content">+3<span class="btn-subtext">CABEZA</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('rojo', 4, 'petogiro')"><div class="btn-content">+4<span class="btn-subtext">P. GIRO</span></div></button>
+        </div>
+
+        <div class="bando-mobile azul">
+            <button class="btn-mobile" onclick="enviarVoto('azul', 1, 'punio')"><div class="btn-content">+1<span class="btn-subtext">PUÑO</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('azul', 2, 'peto')"><div class="btn-content">+2<span class="btn-subtext">PETO</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('azul', 3, 'casco')"><div class="btn-content">+3<span class="btn-subtext">CABEZA</span></div></button>
+            <button class="btn-mobile" onclick="enviarVoto('azul', 4, 'petogiro')"><div class="btn-content">+4<span class="btn-subtext">P. GIRO</span></div></button>
+        </div>
+    </div>
+
+    <script>
+        const canalTransmision = new BroadcastChannel('smtkd_transmision');
+        let socket = null;
+
+        // Intentar conectar por WebSocket solo si no estamos corriendo en GitHub Pages de forma estática
+        if (window.location.hostname !== "github.io" && window.location.protocol !== "file:") {
+            const loc = window.location;
+            const socketUrl = (loc.protocol === "https:") ? "wss://" : "ws://" + loc.host;
+            socket = new WebSocket(socketUrl);
+            
+            socket.onopen = () => console.log("Conectado al servidor de Red Local Node.js");
+            socket.onerror = (err) => console.log("Modo red local no disponible, usando canal de pestaña.");
+        }
+
+        function enviarVoto(bando, cantidad, tipo) {
+            if (window.navigator.vibrate) window.navigator.vibrate(40); 
+            let juezIndex = parseInt(document.getElementById('select-juez').value);
+            
+            const paqueteVoto = {
+                comandoAccion: "VOTO_MOBILE",
+                bando: bando,
+                cantidad: cantidad,
+                tipo: tipo,
+                juez: juezIndex
+            };
+
+            // 1. Vía Servidor de Red Local (Para el torneo con Node.js/Celulares reales)
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(paqueteVoto));
+            } 
+            
+            // 2. Vía Canal Local Inter-pestañas (Para cuando probás en la misma notebook desde GitHub o local)
+            canalTransmision.postMessage(paqueteVoto);
+        }
+    </script>
+</body>
+</html>
+
         /* Estilos específicos de botones táctiles */
         .rojo .btn-mobile { background: #a7131f; border-bottom: 4px solid #5c070c; }
         .azul .btn-mobile { background: #0b3c75; border-bottom: 4px solid #051d3b; }
