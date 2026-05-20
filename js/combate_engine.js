@@ -1,110 +1,94 @@
 // =========================================================================
-// MOTOR CENTRAL DE COMBATE Y BROADCAST A TV (COMPLETO Y ANIMADO)
+// MOTOR CENTRAL DE COMBATE Y BROADCAST A TV (VERSIÓN DEFINITIVA E-SPORTS)
 // =========================================================================
 
 const canalTransmision = new BroadcastChannel('smtkd_transmision');
-let reglas = JSON.parse(sessionStorage.getItem('smtkd_active_match_rules')) || { 
-    tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, 
-    coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 
-};
+let r = JSON.parse(sessionStorage.getItem('smtkd_active_match_rules'));
 
+let configPelea = r || { tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 };
 let combate = { 
     rojo: { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: 0 }, 
     azul: { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: 0 } 
 };
-
-let fase = 'pelea'; 
-let roundActual = 1; 
-let tiempoRestante = reglas.tiempoRound; 
-let corriendo = false; 
-let intervalo; 
-let ganadorDelCombate = null;
-let tiempoPeleaGuardado = 0;
-let estadoAnteriorMandos = {};
+let colaDeVotos = []; let fase = 'pelea'; let roundActual = 1; let tiempoRestante = configPelea.tiempoRound; let corriendo = false; let intervalo; let ganadorDelCombate = null; let tiempoPeleaGuardado = 0; let estadoAnteriorMandos = {};
 
 document.addEventListener("DOMContentLoaded", () => {
     if (document.getElementById('cronometro')) {
-        document.getElementById('nombre-display-rojo').innerText = reglas.nombreRojo || "HONG";
-        document.getElementById('subtexto-display-rojo').innerText = reglas.clubRojo || "";
-        document.getElementById('rank-display-rojo').innerText = reglas.rankRojo || "";
+        document.getElementById('nombre-display-rojo').innerText = r?.nombreRojo || "HONG";
+        document.getElementById('subtexto-display-rojo').innerText = r?.clubRojo || "CLUB";
+        document.getElementById('rank-display-rojo').innerText = r?.rankRojo || "SEED";
+        document.getElementById('nombre-display-azul').innerText = r?.nombreAzul || "CHONG";
+        document.getElementById('subtexto-display-azul').innerText = r?.clubAzul || "CLUB";
+        document.getElementById('rank-display-azul').innerText = r?.rankAzul || "SEED";
+        document.getElementById('categoria-display').innerText = r?.categoria || "DIVISIÓN OFICIAL WT";
         
-        document.getElementById('nombre-display-azul').innerText = reglas.nombreAzul || "CHONG";
-        document.getElementById('subtexto-display-azul').innerText = reglas.clubAzul || "";
-        document.getElementById('rank-display-azul').innerText = reglas.rankAzul || "";
-        
-        if(document.getElementById('categoria-display')) {
-            document.getElementById('categoria-display').innerText = reglas.categoria || "DIVISIÓN OFICIAL WT";
-        }
-
-        // Carga Segura de Banderas (Con fallback a 'none' si no existe)
+        // Ajuste de ruta de banderas a la carpeta "gral/"
         let imgRojo = document.getElementById('img-bandera-rojo');
-        if (reglas.paisRojo && imgRojo) { 
-            imgRojo.src = `banderas/${reglas.paisRojo.toLowerCase()}.png`; 
-            imgRojo.style.display = 'block'; 
-            imgRojo.onerror = () => { imgRojo.style.display = 'none'; }; 
-        }
+        if (r?.paisRojo && imgRojo) { imgRojo.src = `gral/${r.paisRojo.toLowerCase()}.png`; imgRojo.style.display='block'; imgRojo.onerror = () => imgRojo.style.display='none'; }
         
         let imgAzul = document.getElementById('img-bandera-azul');
-        if (reglas.paisAzul && imgAzul) { 
-            imgAzul.src = `banderas/${reglas.paisAzul.toLowerCase()}.png`; 
-            imgAzul.style.display = 'block'; 
-            imgAzul.onerror = () => { imgAzul.style.display = 'none'; }; 
-        }
+        if (r?.paisAzul && imgAzul) { imgAzul.src = `gral/${r.paisAzul.toLowerCase()}.png`; imgAzul.style.display='block'; imgAzul.onerror = () => imgAzul.style.display='none'; }
 
+        for(let i=1; i<=2; i++) {
+            let m = (i <= configPelea.mandosActivos) ? 'flex' : 'none';
+            if(document.getElementById(`j${i}-rojo-box`)) document.getElementById(`j${i}-rojo-box`).style.display = m;
+            if(document.getElementById(`j${i}-azul-box`)) document.getElementById(`j${i}-azul-box`).style.display = m;
+        }
         actualizarPantallaCombate();
-        
-        // Forzamos la actualización a la TV por si se abrió antes
         setTimeout(actualizarPantallaCombate, 500); 
     }
-    requestAnimationFrame(loopGamepadsCombate);
 });
 
-// --- ACTUALIZACIÓN VISUAL Y TRANSMISIÓN TV ---
-function actualizarPantallaCombate(bando = null, tipo = null) {
-    let m = Math.floor(tiempoRestante / 60); 
-    let s = tiempoRestante % 60;
+function actualizarPantallaCombate(bando = null, tipo = null, cantidad = null) {
+    let m = Math.floor(tiempoRestante / 60); let s = tiempoRestante % 60;
     let timeStr = `${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
     let lblFase = document.getElementById('lbl-fase')?.innerText || "ROUND";
     
     if(document.getElementById('cronometro')) {
-        document.getElementById('pts-rojo').innerText = combate.rojo.puntos; 
-        document.getElementById('flt-rojo').innerText = combate.rojo.gamjeoms;
-        document.getElementById('pts-azul').innerText = combate.azul.puntos; 
-        document.getElementById('flt-azul').innerText = combate.azul.gamjeoms;
-        document.getElementById('cronometro').innerText = timeStr; 
-        document.getElementById('round-actual').innerText = roundActual;
+        document.getElementById('pts-rojo').innerText = combate.rojo.puntos; document.getElementById('flt-rojo').innerText = combate.rojo.gamjeoms;
+        document.getElementById('pts-azul').innerText = combate.azul.puntos; document.getElementById('flt-azul').innerText = combate.azul.gamjeoms;
+        document.getElementById('cronometro').innerText = timeStr; document.getElementById('round-actual').innerText = roundActual;
         
-        // Actualizar Leds de Rounds Ganados
-        let rR1 = document.getElementById('round-rojo-1'); if(rR1) rR1.classList.toggle('activo', combate.rojo.roundsGanados >= 1);
-        let rR2 = document.getElementById('round-rojo-2'); if(rR2) rR2.classList.toggle('activo', combate.rojo.roundsGanados >= 2);
-        let rA1 = document.getElementById('round-azul-1'); if(rA1) rA1.classList.toggle('activo', combate.azul.roundsGanados >= 1);
-        let rA2 = document.getElementById('round-azul-2'); if(rA2) rA2.classList.toggle('activo', combate.azul.roundsGanados >= 2);
+        document.getElementById('round-rojo-1').classList.toggle('activo', combate.rojo.roundsGanados >= 1);
+        document.getElementById('round-rojo-2').classList.toggle('activo', combate.rojo.roundsGanados >= 2);
+        document.getElementById('round-azul-1').classList.toggle('activo', combate.azul.roundsGanados >= 1);
+        document.getElementById('round-azul-2').classList.toggle('activo', combate.azul.roundsGanados >= 2);
     }
 
     canalTransmision.postMessage({
-        nombreRojo: reglas.nombreRojo, subtextoRojo: reglas.clubRojo, rankRojo: reglas.rankRojo, srcBanderaRojo: reglas.paisRojo ? `banderas/${reglas.paisRojo.toLowerCase()}.png` : '',
-        nombreAzul: reglas.nombreAzul, subtextoAzul: reglas.clubAzul, rankAzul: reglas.rankAzul, srcBanderaAzul: reglas.paisAzul ? `banderas/${reglas.paisAzul.toLowerCase()}.png` : '',
-        categoriaCombate: reglas.categoria, 
-        ptsRojo: combate.rojo.puntos, fltRojo: combate.rojo.gamjeoms, 
-        ptsAzul: combate.azul.puntos, fltAzul: combate.azul.gamjeoms,
-        roundActual: roundActual, cronometro: timeStr, lblFase: lblFase,
-        roundRojo1: combate.rojo.roundsGanados>=1, roundRojo2: combate.rojo.roundsGanados>=2, 
-        roundAzul1: combate.azul.roundsGanados>=1, roundAzul2: combate.azul.roundsGanados>=2
+        nombreRojo: r?.nombreRojo, subtextoRojo: r?.clubRojo, rankRojo: r?.rankRojo, srcBanderaRojo: r?`gral/${r.paisRojo.toLowerCase()}.png`:'',
+        nombreAzul: r?.nombreAzul, subtextoAzul: r?.clubAzul, rankAzul: r?.rankAzul, srcBanderaAzul: r?`gral/${r.paisAzul.toLowerCase()}.png`:'',
+        categoriaCombate: r?.categoria, ptsRojo: combate.rojo.puntos, fltRojo: combate.rojo.gamjeoms, ptsAzul: combate.azul.puntos, fltAzul: combate.azul.gamjeoms,
+        roundActual, cronometro: timeStr, lblFase: lblFase,
+        roundRojo1: combate.rojo.roundsGanados>=1, roundRojo2: combate.rojo.roundsGanados>=2, roundAzul1: combate.azul.roundsGanados>=1, roundAzul2: combate.azul.roundsGanados>=2,
+        hitBando: bando, hitTipo: tipo, hitCantidad: cantidad, mandosActivos: configPelea.mandosActivos
     });
 }
 
-function chequearPointGap() {
-    if (reglas.pointGapActivo && fase === 'pelea') {
-        let diff = Math.abs(combate.rojo.puntos - combate.azul.puntos);
-        if (diff >= reglas.pointGapPts) {
-            let ganadorRnd = combate.rojo.puntos > combate.azul.puntos ? 'rojo' : 'azul';
-            detenerCronometroFuerza();
-            procesarFinRound(ganadorRnd, `Diferencia de Puntos (${reglas.pointGapPts} pts).`);
-        }
-    }
-}
+window.procesarIntencionVotoDirecto = function(bando, cantidad, tipo, index = 0) {
+    if(ganadorDelCombate || fase !== 'pelea') return;
+    let realJ = (index % 2 === 0) ? 0 : 1;
+    let vis = `j${realJ+1}`;
+    let b = document.getElementById(`${vis}-${bando}-box`); let v = document.getElementById(`${vis}-${bando}-val`);
+    if(b && v) { v.innerText = cantidad > 0 ? `+${cantidad}` : cantidad; b.classList.add('parpadeo-voto'); setTimeout(()=>{ b.classList.remove('parpadeo-voto'); v.innerText="--"; }, 900); }
+    canalTransmision.postMessage({ comandoAccion: "VOTO_JUEZ", juez: vis, bando, cantidad });
 
-// --- CONTROLES DE PUNTOS Y FALTAS (CON ANIMACIÓN) ---
+    if(configPelea.coincidenciasRequeridas === 1) { cambiarPuntosDirecto(bando, cantidad, tipo); return; }
+
+    let ahora = Date.now();
+    colaDeVotos.push({ bando, cantidad, tipo, idJuez: realJ, timestamp: ahora });
+    colaDeVotos = colaDeVotos.filter(v => (ahora - v.timestamp) <= 2000); 
+
+    let match = colaDeVotos.filter(v => v.bando === bando && v.cantidad === cantidad && v.tipo === tipo);
+    let jueces = [...new Set(match.map(v => v.idJuez))];
+
+    if(jueces.length >= configPelea.coincidenciasRequeridas) {
+        cambiarPuntosDirecto(bando, cantidad, tipo);
+        jueces.forEach(j => { let box = document.getElementById(`j${j+1}-${bando}-box`); if(box) { box.classList.add('activo'); setTimeout(()=>box.classList.remove('activo'),1000); } });
+        colaDeVotos = colaDeVotos.filter(v => !(v.bando === bando && v.tipo === tipo));
+    }
+};
+
 window.cambiarPuntosDirecto = function(bando, cantidad, tipo = null) {
     if(ganadorDelCombate || fase !== 'pelea') return;
     let atleta = combate[bando];
@@ -117,27 +101,17 @@ window.cambiarPuntosDirecto = function(bando, cantidad, tipo = null) {
         else if (tipo === 'petogiro') atleta.petogiro++; 
         else if (tipo === 'cascogiro') atleta.cascogiro++;
 
-        // --- DISPARO DE ANIMACIÓN VISUAL ---
         let numDisplay = document.getElementById(`pts-${bando}`);
         if (numDisplay) {
-            // "Truco" para reiniciar la animación si marcan puntos muy rápido
-            numDisplay.classList.remove('hit'); 
-            void numDisplay.offsetWidth; 
-            numDisplay.classList.add('hit');
-            
-            // Crear el texto flotante (+1, +2, etc)
+            numDisplay.classList.remove('hit'); void numDisplay.offsetWidth; numDisplay.classList.add('hit');
             let contenedorPadre = numDisplay.parentElement;
             contenedorPadre.style.position = 'relative';
-            
             let flotante = document.createElement('div');
             flotante.className = 'texto-flotante';
             flotante.innerText = `+${cantidad}`;
             contenedorPadre.appendChild(flotante);
-            
-            // Eliminar el texto flotante después de 1 segundo
             setTimeout(() => { flotante.remove(); }, 1000);
         }
-
     } else {
         atleta.puntos = Math.max(0, atleta.puntos - 1);
         if (tipo === 'punio') atleta.punio = Math.max(0, atleta.punio - 1); 
@@ -147,59 +121,44 @@ window.cambiarPuntosDirecto = function(bando, cantidad, tipo = null) {
         else if (tipo === 'cascogiro') atleta.cascogiro = Math.max(0, atleta.cascogiro - 1);
     }
     
-    actualizarPantallaCombate(bando, tipo);
-    chequearPointGap();
-};
-
-window.cambiarFalta = function(bando, cantidad) {
-    if(ganadorDelCombate || fase !== 'pelea') return;
-    let infractor = combate[bando]; 
-    let oponenteBando = (bando === 'rojo') ? 'azul' : 'rojo'; 
-    let oponente = combate[oponenteBando];
-    
-    if(cantidad > 0) {
-        infractor.gamjeoms++;
-        oponente.puntos++; 
-        actualizarPantallaCombate();
-        if(reglas.gamjeomLimiteActivo && infractor.gamjeoms >= reglas.gamjeomMax) {
-            detenerCronometroFuerza();
-            procesarFinRound(oponenteBando, "Descalificación por límite de Gam-Jeom.");
-            return;
-        }
-        chequearPointGap();
-    } else {
-        if(infractor.gamjeoms > 0) {
-            infractor.gamjeoms--;
-            oponente.puntos = Math.max(0, oponente.puntos - 1);
-            actualizarPantallaCombate();
-        }
+    actualizarPantallaCombate(bando, tipo, cantidad);
+    if(configPelea.pointGapActivo && Math.abs(combate.rojo.puntos - combate.azul.puntos) >= configPelea.pointGapPts) { 
+        detenerCronometroFuerza(); 
+        procesarFinRound(combate.rojo.puntos > combate.azul.puntos?'rojo':'azul', "Point Gap."); 
     }
 };
 
-// --- CONTROL DE TIEMPO Y RELOJ ---
+window.cambiarFalta = function(bando, cant) {
+    if(ganadorDelCombate || fase !== 'pelea') return;
+    let inf = combate[bando]; let op = combate[bando==='rojo'?'azul':'rojo'];
+    if(cant > 0) { 
+        inf.gamjeoms++; op.puntos++; actualizarPantallaCombate(); 
+        if(configPelea.gamjeomLimiteActivo && inf.gamjeoms >= configPelea.gamjeomMax) { detenerCronometroFuerza(); procesarFinRound(bando==='rojo'?'azul':'rojo', "Descalificación por Gam-Jeom."); } 
+    }
+    else { if(inf.gamjeoms>0) { inf.gamjeoms--; op.puntos=Math.max(0, op.puntos-1); actualizarPantallaCombate(); } }
+};
+
+// ================= CONTROLES DE TIEMPO =================
 window.controlarTiempo = function() {
     if(ganadorDelCombate) return;
     if(fase === 'descanso') return terminarDescanso();
     if(fase === 'kyeshi') return terminarKyeShi();
     
     const btn = document.getElementById('btn-iniciar');
-    
     if(corriendo) { 
         clearInterval(intervalo); 
         corriendo = false; 
-        if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#006600"; }
+        if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359"; } 
     } else { 
         corriendo = true; 
-        if(btn) { btn.innerText = "❚❚ PAUSE"; btn.style.background = "#990000"; }
-        
-        clearInterval(intervalo);
+        if(btn) { btn.innerText = "❚❚ PAUSE"; btn.style.background = "#b71c1c"; } 
         intervalo = setInterval(() => { 
             if(tiempoRestante > 0) { 
                 tiempoRestante--; 
                 actualizarPantallaCombate(); 
             } else { 
-                detenerCronometroFuerza();
-                evaluarGanadorPorTiempoYReglas();
+                detenerCronometroFuerza(); 
+                evaluarSuperioridad(); 
             } 
         }, 1000); 
     }
@@ -208,8 +167,8 @@ window.controlarTiempo = function() {
 window.detenerCronometroFuerza = function() { 
     clearInterval(intervalo); 
     corriendo = false; 
-    let btn = document.getElementById('btn-iniciar');
-    if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#006600"; }
+    let btn = document.getElementById('btn-iniciar'); 
+    if(btn){btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359";} 
 };
 
 window.modificarTiempo = function(s) { 
@@ -218,14 +177,25 @@ window.modificarTiempo = function(s) {
 };
 
 window.iniciarKyeShi = function() { 
-    if(ganadorDelCombate || fase !== 'pelea') return;
-    if(corriendo) controlarTiempo(); 
+    if(ganadorDelCombate || fase !== 'pelea') return; 
+    if(corriendo) { clearInterval(intervalo); corriendo = false; }
+    
     tiempoPeleaGuardado = tiempoRestante; 
     fase = 'kyeshi'; 
-    tiempoRestante = reglas.tiempoMedico; 
-    let lbl = document.getElementById('lbl-fase');
-    if(lbl) lbl.innerText = "MEDICO"; 
-    controlarTiempo(); 
+    tiempoRestante = configPelea.tiempoMedico; 
+    
+    let lbl = document.getElementById('lbl-fase'); 
+    if(lbl) lbl.innerText = "TIEMPO MÉDICO"; 
+    
+    let btn = document.getElementById('btn-iniciar');
+    if(btn) { btn.innerText = "TERMINAR MÉDICO"; btn.style.background = "#1a1c29"; }
+
+    actualizarPantallaCombate();
+    corriendo = true;
+    intervalo = setInterval(() => { 
+        if(tiempoRestante > 0) { tiempoRestante--; actualizarPantallaCombate(); } 
+        else { terminarKyeShi(); } 
+    }, 1000); 
 };
 
 function terminarKyeShi() { 
@@ -233,8 +203,13 @@ function terminarKyeShi() {
     corriendo = false; 
     fase = 'pelea'; 
     tiempoRestante = tiempoPeleaGuardado; 
-    let lbl = document.getElementById('lbl-fase');
+    
+    let lbl = document.getElementById('lbl-fase'); 
     if(lbl) lbl.innerText = "ROUND"; 
+    
+    let btn = document.getElementById('btn-iniciar');
+    if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359"; }
+    
     actualizarPantallaCombate(); 
 }
 
@@ -242,153 +217,198 @@ function terminarDescanso() {
     clearInterval(intervalo); 
     corriendo = false; 
     fase = 'pelea'; 
-    tiempoRestante = reglas.tiempoRound; 
-    let lbl = document.getElementById('lbl-fase');
+    tiempoRestante = configPelea.tiempoRound; 
+    let lbl = document.getElementById('lbl-fase'); 
     if(lbl) lbl.innerText = "ROUND"; 
     actualizarPantallaCombate(); 
 }
 
-// --- EVALUACIÓN DE ROUNDS Y FIN DEL COMBATE ---
-function evaluarGanadorPorTiempoYReglas() {
+// ================= LÓGICA DE FIN DE ROUND Y GUARDADO =================
+function evaluarSuperioridad() {
     let r = combate.rojo; let a = combate.azul;
-    let ptsGiroR = (r.petogiro * 4) + (r.cascogiro * 6); 
-    let ptsGiroA = (a.petogiro * 4) + (a.cascogiro * 6);
-    let ptsCascoR = r.casco * 3; let ptsCascoA = a.casco * 3;
-    let ptsPetoR = r.peto * 2; let ptsPetoA = a.peto * 2;
-
-    if (r.puntos !== a.puntos) return procesarFinRound((r.puntos > a.puntos) ? 'rojo' : 'azul', "Mayor cantidad de puntos.");
-    if (ptsGiroR !== ptsGiroA) return procesarFinRound((ptsGiroR > ptsGiroA) ? 'rojo' : 'azul', "Superioridad: Puntos por Giros.");
-    if (ptsCascoR !== ptsCascoA) return procesarFinRound((ptsCascoR > ptsCascoA) ? 'rojo' : 'azul', "Superioridad: Puntos a la Cabeza.");
-    if (ptsPetoR !== ptsPetoA) return procesarFinRound((ptsPetoR > ptsPetoA) ? 'rojo' : 'azul', "Superioridad: Puntos al Peto.");
-    
-    // Si sigue empatado, forzar voto de superioridad manual
-    alert("¡ROUND EMPATADO! Asignar ganador por superioridad manualmente.");
+    if(r.puntos !== a.puntos) return procesarFinRound(r.puntos>a.puntos?'rojo':'azul', "Puntos Netos.");
+    let gR = (r.petogiro*4)+(r.cascogiro*6); let gA = (a.petogiro*4)+(a.cascogiro*6);
+    if(gR !== gA) return procesarFinRound(gR>gA?'rojo':'azul', "Puntos por Giros.");
+    if(r.casco !== a.casco) return procesarFinRound(r.casco>a.casco?'rojo':'azul', "Impactos a la Cabeza.");
+    if(r.peto !== a.peto) return procesarFinRound(r.peto>a.peto?'rojo':'azul', "Impactos al Peto.");
+    document.getElementById('contenedor-estadisticas').style.display = "none"; document.getElementById('contenedor-voto-manual').style.display = "block"; document.getElementById('btn-modal-accion').style.display = "none"; document.getElementById('modal-round').classList.add('activa');
 }
 
-function procesarFinRound(ganador, motivoCriterio) {
-    combate[ganador].roundsGanados++; 
-    actualizarPantallaCombate();
-    
-    if (reglas.sistema === 'best3') {
-        if (combate.rojo.roundsGanados >= 2) { 
+function procesarFinRound(ganador, motivo) {
+    combate[ganador].roundsGanados++; actualizarPantallaCombate();
+    if(configPelea.sistema === 'best3') {
+        if(combate.rojo.roundsGanados >= 2) { 
             ganadorDelCombate = 'rojo'; 
-            alert(`¡HONG GANA EL COMBATE!\nCriterio: ${motivoCriterio}`);
-        } 
-        else if (combate.azul.roundsGanados >= 2) { 
+            guardarResultadoEnHistorial('rojo', motivo);
+            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: HONG (ROJO)", motivo); 
+        }
+        else if(combate.azul.roundsGanados >= 2) { 
             ganadorDelCombate = 'azul'; 
-            alert(`¡CHONG GANA EL COMBATE!\nCriterio: ${motivoCriterio}`); 
-        } 
-        else { 
-            alert(`ROUND ${roundActual} PARA ${ganador.toUpperCase()}\nCriterio: ${motivoCriterio}`);
-            prepararSiguienteRound();
+            guardarResultadoEnHistorial('azul', motivo);
+            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: CHONG (AZUL)", motivo); 
         }
+        else { abrirModalFinal(`ROUND ${roundActual} TERMINADO`, `GANADOR: ${ganador.toUpperCase()}`, motivo); }
     } else {
-        if (roundActual >= 3) { 
-            ganadorDelCombate = ganador; 
-            alert(`¡COMBATE FINALIZADO!\nGANADOR: ${ganador.toUpperCase()}`); 
-        } 
-        else { 
-            alert(`ROUND ${roundActual} FINALIZADO`);
-            prepararSiguienteRound();
+        if(roundActual >= 3) { 
+            ganadorDelCombate = combate.rojo.puntos>combate.azul.puntos?'rojo':'azul'; 
+            guardarResultadoEnHistorial(ganadorDelCombate, "Puntaje Acumulativo.");
+            abrirModalFinal("COMBATE FIN", `GANADOR: ${ganadorDelCombate.toUpperCase()}`, "Puntaje Acumulativo."); 
+        }
+        else abrirModalFinal(`ROUND ${roundActual} TERMINADO`, "PREPARAR SIGUIENTE ROUND", motivo);
+    }
+}
+
+function abrirModalFinal(tit, gan, crit) {
+    if(!document.getElementById('modal-round')) return;
+    document.getElementById('modal-r-titulo').innerText = tit; document.getElementById('modal-r-ganador').innerText = gan; document.getElementById('modal-r-criterio').innerText = "Criterio: " + crit;
+    document.getElementById('st-pt-r').innerText = combate.rojo.puntos; document.getElementById('st-pt-a').innerText = combate.azul.puntos;
+    document.getElementById('st-pu-r').innerText = combate.rojo.punio; document.getElementById('st-pu-a').innerText = combate.azul.punio;
+    document.getElementById('st-pe-r').innerText = combate.rojo.peto; document.getElementById('st-pe-a').innerText = combate.azul.peto;
+    document.getElementById('st-ca-r').innerText = combate.rojo.casco; document.getElementById('st-ca-a').innerText = combate.azul.casco;
+    
+    // Si usas las IDs agregadas para las estadisticas completas:
+    let stPegR = document.getElementById('st-peg-r'); if (stPegR) stPegR.innerText = combate.rojo.petogiro;
+    let stPegA = document.getElementById('st-peg-a'); if (stPegA) stPegA.innerText = combate.azul.petogiro;
+    let stCagR = document.getElementById('st-cag-r'); if (stCagR) stCagR.innerText = combate.rojo.cascogiro;
+    let stCagA = document.getElementById('st-cag-a'); if (stCagA) stCagA.innerText = combate.azul.cascogiro;
+
+    document.getElementById('st-gj-r').innerText = combate.azul.gamjeoms; document.getElementById('st-gj-a').innerText = combate.rojo.gamjeoms;
+    
+    document.getElementById('modal-round').style.display = 'flex';
+    document.getElementById('modal-round').classList.add('activa');
+    canalTransmision.postMessage({ comandoAccion: "MOSTRAR_ESTADISTICAS_PUBLICO", tituloRound: tit, ganadorRoundTexto: gan, criterioRoundTexto: crit });
+}
+
+window.avanzarSiguientePaso = function() {
+    document.getElementById('modal-round').classList.remove('activa');
+    document.getElementById('modal-round').style.display = 'none';
+    canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
+    
+    if(ganadorDelCombate) { window.location.href = 'setup.html'; }
+    else {
+        roundActual++; if(configPelea.sistema === 'best3') { ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); }
+        fase = 'descanso'; tiempoRestante = configPelea.tiempoDescanso; document.getElementById('lbl-fase').innerText = "DESCANSO"; actualizarPantallaCombate();
+        corriendo = true;
+        intervalo = setInterval(() => { if(tiempoRestante>0) { tiempoRestante--; actualizarPantallaCombate(); } else { terminarDescanso(); } }, 1000);
+    }
+};
+
+window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.display="grid"; document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
+
+// Función para guardar en historial
+function guardarResultadoEnHistorial(ganador, motivo) {
+    let historial = JSON.parse(localStorage.getItem('smtkd_historial_peleas')) || [];
+    let nuevoRegistro = {
+        fecha: new Date().toLocaleString(),
+        categoria: configPelea.categoria || "OFICIAL WT",
+        rojo: { nombre: configPelea.nombreRojo || "HONG", club: configPelea.clubRojo || "", puntosFinales: combate.rojo.puntos },
+        azul: { nombre: configPelea.nombreAzul || "CHONG", club: configPelea.clubAzul || "", puntosFinales: combate.azul.puntos },
+        ganador: ganador === 'rojo' ? (configPelea.nombreRojo || "HONG") : (configPelea.nombreAzul || "CHONG"),
+        bandoGanador: ganador.toUpperCase(),
+        criterio: motivo
+    };
+    historial.push(nuevoRegistro);
+    localStorage.setItem('smtkd_historial_peleas', JSON.stringify(historial));
+}
+
+// Función global para exportar el historial (puedes llamarla desde un botón en tu menú)
+window.exportarHistorialTorneo = function() {
+    let datos = localStorage.getItem('smtkd_historial_peleas');
+    if (!datos) return alert("Aún no hay combates registrados en el historial.");
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(datos);
+    const dl = document.createElement('a'); 
+    dl.setAttribute("href", dataStr); 
+    dl.setAttribute("download", "Resultados_Torneo_SMTKD.json");
+    document.body.appendChild(dl); dl.click(); dl.remove();
+};
+
+// ================= RECEPTOR DE TV Y CELULARES =================
+canalTransmision.onmessage = function(e) {
+    let d = e.data; 
+    
+    // ---> CAPTURA DE VOTO MOBILE (MANDO TÁCTIL) <---
+    if (d.comandoAccion === "VOTO_MOBILE") {
+        if(document.getElementById('cronometro')) { // Solo la compu central procesa esto
+            window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez);
+        }
+        return;
+    }
+
+    const iconClasses = { 'punio': 'icon-punio', 'peto': 'icon-peto', 'casco': 'icon-casco', 'petogiro': 'icon-petogiro', 'cascogiro': 'icon-cascogiro' };
+    
+    if(!document.getElementById('cronometro')) {
+        if(d.comandoAccion === "VOTO_JUEZ") {
+            let b = document.getElementById(`pub-${d.juez}-${d.bando}-box`); let v = document.getElementById(`pub-${d.juez}-${d.bando}-val`);
+            if(b && v) { v.innerText = d.cantidad>0?`+${d.cantidad}`:d.cantidad; b.classList.add('parpadeo-voto'); setTimeout(()=>{b.classList.remove('parpadeo-voto'); v.innerText="--";},900); } return;
+        }
+        if(d.comandoAccion === "MOSTRAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-r-titulo').innerText = d.tituloRound; document.getElementById('pub-modal-r-ganador').innerText = d.ganadorRoundTexto; document.getElementById('pub-modal-r-criterio').innerText = d.criterioRoundTexto; document.getElementById('pub-modal-round').classList.add('activa'); document.getElementById('pub-modal-round').style.display='flex'; return; }
+        if(d.comandoAccion === "OCULTAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-round').classList.remove('activa'); document.getElementById('pub-modal-round').style.display='none'; return; }
+
+        document.getElementById('pub-nombre-rojo').innerText = d.nombreRojo; document.getElementById('pub-subtexto-rojo').innerText = d.subtextoRojo; document.getElementById('pub-rank-rojo').innerText = d.rankRojo;
+        document.getElementById('pub-nombre-azul').innerText = d.nombreAzul; document.getElementById('pub-subtexto-azul').innerText = d.subtextoAzul; document.getElementById('pub-rank-azul').innerText = d.rankAzul;
+        document.getElementById('pub-categoria').innerText = d.categoriaCombate;
+        
+        document.getElementById('pub-pts-rojo').innerText = d.ptsRojo; document.getElementById('pub-flt-rojo').innerText = d.fltRojo;
+        document.getElementById('pub-pts-azul').innerText = d.ptsAzul; document.getElementById('pub-flt-azul').innerText = d.fltAzul;
+        
+        document.getElementById('pub-round-actual').innerText = d.roundActual; document.getElementById('pub-cronometro').innerText = d.cronometro; document.getElementById('pub-lbl-fase').innerText = d.lblFase;
+        
+        document.getElementById('pub-round-rojo-1').classList.toggle('activo', d.roundRojo1); document.getElementById('pub-round-rojo-2').classList.toggle('activo', d.roundRojo2);
+        document.getElementById('pub-round-azul-1').classList.toggle('activo', d.roundAzul1); document.getElementById('pub-round-azul-2').classList.toggle('activo', d.roundAzul2);
+        
+        let mActivos = d.mandosActivos || 1;
+        for(let i=1; i<=2; i++) {
+            let m = (i <= mActivos) ? 'flex' : 'none';
+            if(document.getElementById(`pub-j${i}-rojo-box`)) document.getElementById(`pub-j${i}-rojo-box`).style.display = m;
+            if(document.getElementById(`pub-j${i}-azul-box`)) document.getElementById(`pub-j${i}-azul-box`).style.display = m;
+        }
+
+        let imgRojo = document.getElementById('pub-bandera-rojo'); if(d.srcBanderaRojo && imgRojo) { imgRojo.src = d.srcBanderaRojo; imgRojo.style.display='block'; imgRojo.onerror=()=>imgRojo.style.display='none'; }
+        let imgAzul = document.getElementById('pub-bandera-azul'); if(d.srcBanderaAzul && imgAzul) { imgAzul.src = d.srcBanderaAzul; imgAzul.style.display='block'; imgAzul.onerror=()=>imgAzul.style.display='none'; }
+
+        if(d.hitBando && d.hitTipo && d.hitCantidad > 0) {
+            let numDisplay = document.getElementById(`pub-pts-${d.hitBando}`);
+            if (numDisplay) {
+                numDisplay.classList.remove('hit'); void numDisplay.offsetWidth; numDisplay.classList.add('hit');
+                
+                let contenedorPadre = numDisplay.parentElement;
+                let flotante = document.createElement('div');
+                flotante.className = 'texto-flotante-tv';
+                
+                let colorIcono = d.hitBando === 'rojo' ? '#ff3344' : '#00ddff';
+                flotante.innerHTML = `<span class="tkd-icon ${iconClasses[d.hitTipo]}" style="width: 8vw; height: 8vw; display:block; filter: drop-shadow(0 0 10px ${colorIcono});"></span><span style="font-size: 6vw;">+${d.hitCantidad}</span>`;
+                
+                contenedorPadre.appendChild(flotante);
+                setTimeout(() => { flotante.remove(); }, 1200);
+            }
         }
     }
-}
+};
 
-function prepararSiguienteRound() {
-    roundActual++;
-    if(reglas.sistema === 'best3'){
-        // Resetear puntajes, mantener rounds ganados
-        combate.rojo = { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: combate.rojo.roundsGanados };
-        combate.azul = { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: combate.azul.roundsGanados };
-    }
-    fase = 'descanso'; 
-    tiempoRestante = reglas.tiempoDescanso; 
-    let lbl = document.getElementById('lbl-fase');
-    if(lbl) lbl.innerText = "DESCANSO";
-    actualizarPantallaCombate(); 
-    corriendo = true;
-    intervalo = setInterval(() => { 
-        if (tiempoRestante > 0) { 
-            tiempoRestante--; 
-            actualizarPantallaCombate(); 
-        } else { 
-            terminarDescanso(); 
-        } 
-    }, 1000);
-}
-
-// --- LECTURA DE JOYSTICKS (CÓDIGO BLINDADO CONTRA MULTI-CLICK) ---
+// ================= LECTURA JOYSTICKS FÍSICOS =================
 function loopGamepadsCombate() {
-    if(document.getElementById('cronometro')) {
+    if(document.getElementById('cronometro') && !document.getElementById('modal-admin')?.classList.contains('activa') && !document.getElementById('modal-round')?.classList.contains('activa')) {
         const gps = navigator.getGamepads();
         for(let i=0; i<2; i++) {
             let gp = gps[i]; if(!gp) continue;
-            
-            // Inicializar estado anterior si no existe para evitar errores
             if(!estadoAnteriorMandos[i]) estadoAnteriorMandos[i] = {};
+            let res = gp.buttons[6]?.pressed || false; 
             
-            let res = gp.buttons[6]?.pressed || false; // L2 apretado = Restar
-            let val = res ? -1 : 1; // Multiplicador
+            if(gp.buttons[13]?.pressed && !estadoAnteriorMandos[i].btn_down)  procesarIntencionVotoDirecto('rojo', res ? -1 : 1, 'punio', i);
+            if(gp.buttons[15]?.pressed && !estadoAnteriorMandos[i].btn_right) procesarIntencionVotoDirecto('rojo', res ? -2 : 2, 'peto', i);
+            if(gp.buttons[12]?.pressed && !estadoAnteriorMandos[i].btn_up)    procesarIntencionVotoDirecto('rojo', res ? -3 : 3, 'casco', i);
+            if(gp.buttons[14]?.pressed && !estadoAnteriorMandos[i].btn_left)  procesarIntencionVotoDirecto('rojo', res ? -4 : 4, 'petogiro', i);
+            if(gp.buttons[4]?.pressed && !estadoAnteriorMandos[i].btn_l1)     procesarIntencionVotoDirecto('rojo', res ? -6 : 6, 'cascogiro', i);
 
-            // ROJO (Flechas y L1)
-            if(gp.buttons[13]?.pressed && !estadoAnteriorMandos[i].btn_down)  cambiarPuntosDirecto('rojo', 1 * val, 'punio');
-            if(gp.buttons[15]?.pressed && !estadoAnteriorMandos[i].btn_right) cambiarPuntosDirecto('rojo', 2 * val, 'peto');
-            if(gp.buttons[12]?.pressed && !estadoAnteriorMandos[i].btn_up)    cambiarPuntosDirecto('rojo', 3 * val, 'casco');
-            if(gp.buttons[14]?.pressed && !estadoAnteriorMandos[i].btn_left)  cambiarPuntosDirecto('rojo', 4 * val, 'petogiro');
-            if(gp.buttons[4]?.pressed && !estadoAnteriorMandos[i].btn_l1)     cambiarPuntosDirecto('rojo', 6 * val, 'cascogiro');
+            if(gp.buttons[0]?.pressed && !estadoAnteriorMandos[i].btn_x)     procesarIntencionVotoDirecto('azul', res ? -1 : 1, 'punio', i);
+            if(gp.buttons[2]?.pressed && !estadoAnteriorMandos[i].btn_sq)    procesarIntencionVotoDirecto('azul', res ? -2 : 2, 'peto', i);
+            if(gp.buttons[3]?.pressed && !estadoAnteriorMandos[i].btn_tr)    procesarIntencionVotoDirecto('azul', res ? -3 : 3, 'casco', i);
+            if(gp.buttons[1]?.pressed && !estadoAnteriorMandos[i].btn_ci)    procesarIntencionVotoDirecto('azul', res ? -4 : 4, 'petogiro', i);
+            if(gp.buttons[5]?.pressed && !estadoAnteriorMandos[i].btn_r1)    procesarIntencionVotoDirecto('azul', res ? -6 : 6, 'cascogiro', i);
 
-            // AZUL (Acción y R1)
-            if(gp.buttons[0]?.pressed && !estadoAnteriorMandos[i].btn_x)     cambiarPuntosDirecto('azul', 1 * val, 'punio');
-            if(gp.buttons[2]?.pressed && !estadoAnteriorMandos[i].btn_sq)    cambiarPuntosDirecto('azul', 2 * val, 'peto');
-            if(gp.buttons[3]?.pressed && !estadoAnteriorMandos[i].btn_tr)    cambiarPuntosDirecto('azul', 3 * val, 'casco');
-            if(gp.buttons[1]?.pressed && !estadoAnteriorMandos[i].btn_ci)    cambiarPuntosDirecto('azul', 4 * val, 'petogiro');
-            if(gp.buttons[5]?.pressed && !estadoAnteriorMandos[i].btn_r1)    cambiarPuntosDirecto('azul', 6 * val, 'cascogiro');
-
-            // Guardar el estado exacto de este frame para el frame que viene (Evita el multi-click)
-            estadoAnteriorMandos[i] = { 
-                btn_down: gp.buttons[13]?.pressed, btn_right: gp.buttons[15]?.pressed, 
-                btn_up: gp.buttons[12]?.pressed, btn_left: gp.buttons[14]?.pressed, 
-                btn_l1: gp.buttons[4]?.pressed, btn_x: gp.buttons[0]?.pressed, 
-                btn_sq: gp.buttons[2]?.pressed, btn_tr: gp.buttons[3]?.pressed, 
-                btn_ci: gp.buttons[1]?.pressed, btn_r1: gp.buttons[5]?.pressed 
-            };
+            estadoAnteriorMandos[i] = { btn_down: gp.buttons[13]?.pressed, btn_right: gp.buttons[15]?.pressed, btn_up: gp.buttons[12]?.pressed, btn_left: gp.buttons[14]?.pressed, btn_l1: gp.buttons[4]?.pressed, btn_x: gp.buttons[0]?.pressed, btn_sq: gp.buttons[2]?.pressed, btn_tr: gp.buttons[3]?.pressed, btn_ci: gp.buttons[1]?.pressed, btn_r1: gp.buttons[5]?.pressed };
         }
     }
     requestAnimationFrame(loopGamepadsCombate);
 }
-
-// --- RECEPTOR DE LA PANTALLA DE PÚBLICO ---
-canalTransmision.onmessage = function(e) {
-    if(!document.getElementById('cronometro')) {
-        let d = e.data;
-        let setPubVal = (id, val) => { let el = document.getElementById(id); if(el) el.innerText = val; };
-        
-        setPubVal('pub-nombre-rojo', d.nombreRojo);
-        setPubVal('pub-subtexto-rojo', d.subtextoRojo);
-        setPubVal('pub-rank-rojo', d.rankRojo);
-        setPubVal('pub-nombre-azul', d.nombreAzul);
-        setPubVal('pub-subtexto-azul', d.subtextoAzul);
-        setPubVal('pub-rank-azul', d.rankAzul);
-        setPubVal('pub-categoria', d.categoriaCombate);
-        
-        setPubVal('pub-pts-rojo', d.ptsRojo); 
-        setPubVal('pub-flt-rojo', d.fltRojo);
-        setPubVal('pub-pts-azul', d.ptsAzul); 
-        setPubVal('pub-flt-azul', d.fltAzul);
-        
-        setPubVal('pub-round-actual', d.roundActual); 
-        setPubVal('pub-cronometro', d.cronometro); 
-        setPubVal('pub-lbl-fase', d.lblFase);
-
-        let bR = document.getElementById('pub-bandera-rojo');
-        if(bR && d.srcBanderaRojo) { bR.src = d.srcBanderaRojo; bR.style.display = 'block'; bR.onerror = ()=> bR.style.display='none'; }
-        
-        let bA = document.getElementById('pub-bandera-azul');
-        if(bA && d.srcBanderaAzul) { bA.src = d.srcBanderaAzul; bA.style.display = 'block'; bA.onerror = ()=> bA.style.display='none'; }
-
-        let rR1 = document.getElementById('pub-round-rojo-1'); if(rR1) rR1.classList.toggle('activo', d.roundRojo1);
-        let rR2 = document.getElementById('pub-round-rojo-2'); if(rR2) rR2.classList.toggle('activo', d.roundRojo2);
-        let rA1 = document.getElementById('pub-round-azul-1'); if(rA1) rA1.classList.toggle('activo', d.roundAzul1);
-        let rA2 = document.getElementById('pub-round-azul-2'); if(rA2) rA2.classList.toggle('activo', d.roundAzul2);
-    }
-};
+requestAnimationFrame(loopGamepadsCombate);
