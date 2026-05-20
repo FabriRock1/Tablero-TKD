@@ -1,136 +1,206 @@
+// =========================================================================
+// SETUP DE TORNEO, LLAVES AUTOMÁTICAS Y PRUEBA DE MANDOS (COMPLETO)
+// =========================================================================
+
 const paisesDisponibles = [
     { code: "ar", name: "🇦🇷 Argentina" }, { code: "br", name: "🇧🇷 Brasil" }, { code: "cl", name: "🇨🇱 Chile" },
     { code: "co", name: "🇨🇴 Colombia" }, { code: "pe", name: "🇵🇪 Perú" }, { code: "uy", name: "🇺🇾 Uruguay" }, 
     { code: "mx", name: "🇲🇽 México" }, { code: "us", name: "🇺🇸 Estados Unidos" }, { code: "kr", name: "🇰🇷 Corea del Sur" }
 ];
 
+let poolCompetidores = JSON.parse(localStorage.getItem('smtkd_competidores')) || [];
+
 document.addEventListener("DOMContentLoaded", () => {
+    // --- 1. INICIALIZACIÓN DE SETUP.HTML ---
     const selRojo = document.getElementById("cfg-pais-rojo");
     const selAzul = document.getElementById("cfg-pais-azul");
     
     if(selRojo && selAzul) {
+        // Cargar lista de países
         paisesDisponibles.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
-            let oR = new Option(p.name, p.code); let oA = new Option(p.name, p.code);
-            if(p.code === "ar") oR.selected = true; if(p.code === "br") oA.selected = true;
-            selRojo.add(oR); selAzul.add(oA);
+            let oR = new Option(p.name, p.code); 
+            let oA = new Option(p.name, p.code);
+            if(p.code === "ar") oR.selected = true; 
+            if(p.code === "br") oA.selected = true;
+            selRojo.add(oR); 
+            selAzul.add(oA);
         });
 
+        // Autocompletar si venimos de la pantalla de llaves
         const precarga = JSON.parse(sessionStorage.getItem('smtkd_preload_match'));
         if(precarga) {
-            document.getElementById('cfg-nombre-rojo').value = precarga.nomRojo;
-            document.getElementById('cfg-subtexto-rojo').value = precarga.clubRojo;
-            document.getElementById('cfg-nombre-azul').value = precarga.nomAzul;
-            document.getElementById('cfg-subtexto-azul').value = precarga.clubAzul;
-            document.getElementById('cfg-categoria-combate').value = precarga.categoria;
-            document.getElementById('cfg-rank-rojo').value = "CLASIFICADO";
-            document.getElementById('cfg-rank-azul').value = "CLASIFICADO";
-            sessionStorage.removeItem('smtkd_preload_match');
+            if(document.getElementById('cfg-nombre-rojo')) document.getElementById('cfg-nombre-rojo').value = precarga.rojo || "";
+            if(document.getElementById('cfg-subtexto-rojo')) document.getElementById('cfg-subtexto-rojo').value = precarga.clubRojo || "";
+            if(document.getElementById('cfg-nombre-azul')) document.getElementById('cfg-nombre-azul').value = precarga.azul || "";
+            if(document.getElementById('cfg-subtexto-azul')) document.getElementById('cfg-subtexto-azul').value = precarga.clubAzul || "";
+            sessionStorage.removeItem('smtkd_preload_match'); 
         }
     }
-    if(typeof renderizarLlaveAutomatica === 'function') renderizarLlaveAutomatica();
+
+    // --- 2. INICIALIZACIÓN DE TORNEO.HTML ---
+    if(document.getElementById('bracket-render-box')) {
+        let lblTotal = document.getElementById('total-inscriptos-lbl');
+        if(lblTotal) lblTotal.innerText = `Atletas: ${poolCompetidores.length}`;
+        renderizarLlaveAutomatica();
+        requestAnimationFrame(loopTestMandos);
+    }
 });
 
+// ================= LÓGICA DE SETUP.HTML =================
 window.guardarYComenzar = function() {
-    let rawJueces = document.getElementById('cfg-jueces')?.value || "1_1";
-    let mActivos = parseInt(rawJueces.split('_')[0]);
-    let coincReq = parseInt(rawJueces.split('_')[1]);
-    
-    const configExportable = {
-        tiempoRound: (parseInt(document.getElementById('cfg-min').value)||0)*60 + (parseInt(document.getElementById('cfg-seg').value)||0),
-        tiempoDescanso: (parseInt(document.getElementById('cfg-desc-min').value)||0)*60 + (parseInt(document.getElementById('cfg-desc-seg').value)||0),
-        tiempoMedico: (parseInt(document.getElementById('cfg-med-min').value)||0)*60 + (parseInt(document.getElementById('cfg-med-seg').value)||0),
-        sistema: document.getElementById('cfg-sistema').value,
-        mandosActivos: mActivos,
-        coincidenciasRequeridas: coincReq,
-        gamjeomLimiteActivo: document.getElementById('cfg-gj-act').checked,
-        gamjeomMax: parseInt(document.getElementById('cfg-gj-max').value) || 5,
-        pointGapActivo: document.getElementById('cfg-pg-act').checked,
-        pointGapPts: parseInt(document.getElementById('cfg-pg-pts').value) || 12,
-        
-        nombreRojo: document.getElementById('cfg-nombre-rojo').value, clubRojo: document.getElementById('cfg-subtexto-rojo').value, rankRojo: document.getElementById('cfg-rank-rojo').value, paisRojo: document.getElementById('cfg-pais-rojo').value,
-        nombreAzul: document.getElementById('cfg-nombre-azul').value, clubAzul: document.getElementById('cfg-subtexto-azul').value, rankAzul: document.getElementById('cfg-rank-azul').value, paisAzul: document.getElementById('cfg-pais-azul').value,
-        categoria: document.getElementById('cfg-categoria-combate').value
-    };
-    sessionStorage.setItem('smtkd_active_match_rules', JSON.stringify(configExportable));
+    let reglas = {};
+
+    reglas.nombreRojo = document.getElementById('cfg-nombre-rojo')?.value.trim() || "HONG";
+    reglas.clubRojo = document.getElementById('cfg-subtexto-rojo')?.value.trim() || "";
+    reglas.rankRojo = document.getElementById('cfg-rank-rojo')?.value.trim() || "";
+    reglas.paisRojo = document.getElementById('cfg-pais-rojo')?.value || "ar";
+
+    reglas.nombreAzul = document.getElementById('cfg-nombre-azul')?.value.trim() || "CHONG";
+    reglas.clubAzul = document.getElementById('cfg-subtexto-azul')?.value.trim() || "";
+    reglas.rankAzul = document.getElementById('cfg-rank-azul')?.value.trim() || "";
+    reglas.paisAzul = document.getElementById('cfg-pais-azul')?.value || "br";
+
+    reglas.categoria = document.getElementById('cfg-categoria-combate')?.value.trim() || "DIVISIÓN OFICIAL WT";
+
+    // Obtener configuración de tiempos en segundos
+    let tMin = parseInt(document.getElementById('cfg-min')?.value) || 1;
+    let tSeg = parseInt(document.getElementById('cfg-seg')?.value) || 30;
+    reglas.tiempoRound = (tMin * 60) + tSeg;
+
+    let dMin = parseInt(document.getElementById('cfg-desc-min')?.value) || 1;
+    let dSeg = parseInt(document.getElementById('cfg-desc-seg')?.value) || 0;
+    reglas.tiempoDescanso = (dMin * 60) + dSeg;
+
+    let mMin = parseInt(document.getElementById('cfg-med-min')?.value) || 1;
+    let mSeg = parseInt(document.getElementById('cfg-med-seg')?.value) || 0;
+    reglas.tiempoMedico = (mMin * 60) + mSeg;
+
+    reglas.sistema = document.getElementById('cfg-sistema')?.value || 'best3';
+
+    let configMandos = document.getElementById('cfg-jueces')?.value.split('_') || ["1", "1"];
+    reglas.mandosActivos = parseInt(configMandos[0]);
+    reglas.coincidenciasRequeridas = parseInt(configMandos[1]);
+
+    reglas.gamjeomLimiteActivo = document.getElementById('cfg-gj-act')?.checked ?? true;
+    reglas.gamjeomMax = parseInt(document.getElementById('cfg-gj-max')?.value) || 5;
+    reglas.pointGapActivo = document.getElementById('cfg-pg-act')?.checked ?? true;
+    reglas.pointGapPts = parseInt(document.getElementById('cfg-pg-pts')?.value) || 12;
+
+    sessionStorage.setItem('smtkd_active_match_rules', JSON.stringify(reglas));
     window.location.href = 'combate.html';
 };
 
-window.abrirPantallaTest = function() { document.getElementById('pagina-test').classList.add('activa'); loopTestMandos(); };
-window.cerrarPantallaTest = function() { document.getElementById('pagina-test').classList.remove('activa'); };
+window.abrirPantallaPublico = function() { window.open('vista-publico.html', 'SMTKD_Estadio', 'width=1280,height=720'); };
 
-// ================= TORNEO OFFLINE =================
-let poolCompetidores = JSON.parse(localStorage.getItem('smtkd_competidores')) || [];
-
+// ================= LÓGICA DE TORNEO.HTML (LLAVES Y OFFLINE) =================
 window.guardarAtletaNuevo = function() {
     let nom = document.getElementById('torn-nombre').value.trim().toUpperCase();
     let clb = document.getElementById('torn-club').value.trim().toUpperCase();
-    let cin = document.getElementById('torn-cinturon').value;
-    let pes = document.getElementById('torn-peso').value;
-    if(!nom || !clb) { alert("Complete Nombre y Club."); return; }
-    poolCompetidores.push({ nombre: nom, club: clb, cinturon: cin, peso: pes });
+    if(!nom) return alert("Falta el nombre del atleta");
+    
+    poolCompetidores.push({ nombre: nom, club: clb });
     localStorage.setItem('smtkd_competidores', JSON.stringify(poolCompetidores));
-    document.getElementById('torn-nombre').value = ""; document.getElementById('torn-club').value = "";
+    
+    document.getElementById('torn-nombre').value = "";
+    document.getElementById('torn-club').value = "";
+    
+    let lblTotal = document.getElementById('total-inscriptos-lbl');
+    if(lblTotal) lblTotal.innerText = `Atletas: ${poolCompetidores.length}`;
     renderizarLlaveAutomatica();
 };
 
-window.renderizarLlaveAutomatica = function() {
-    let cF = document.getElementById('filtro-cinturon').value; let pF = document.getElementById('filtro-peso').value;
-    let box = document.getElementById('bracket-render-box'); if(!box) return; box.innerHTML = "";
-    
-    let f = poolCompetidores.filter(a => a.cinturon === cF && a.peso === pF);
-    document.getElementById('total-inscriptos-lbl').innerText = `Atletas inscriptos: ${f.length}`;
-    if(f.length < 2) { box.innerHTML = "<div style='color:#555; font-family:Orbitron; padding:20px; text-align:center;'>FALTAN ATLETAS EN ESTA CATEGORÍA</div>"; return; }
-
-    let a1 = f[0] || {nombre:"- VACANTE BYE -", club:"--"}; let a2 = f[1] || {nombre:"- VACANTE BYE -", club:"--"};
-    let a3 = f[2] || {nombre:"- VACANTE BYE -", club:"--"}; let a4 = f[3] || {nombre:"- VACANTE BYE -", club:"--"};
-    let c1=a1.nombre.includes("VACANTE")?"atleta-vacante":""; let c2=a2.nombre.includes("VACANTE")?"atleta-vacante":"";
-    let c3=a3.nombre.includes("VACANTE")?"atleta-vacante":""; let c4=a4.nombre.includes("VACANTE")?"atleta-vacante":"";
-
-    box.innerHTML = `<div class="bracket-esports-layout">
-        <div class="bracket-columna"><div class="bracket-titulo-ronda">SEMIFINALES</div>
-            <div class="nodo-match nodo-semifinal nodo-semifinal-top"><div class="cruce-match-box"><div class="fila-atleta-llave b-rojo ${c1}"><div><span class="nombre-llave">${a1.nombre}</span><span class="club-atleta-llave">${a1.club}</span></div></div><div class="fila-atleta-llave b-azul ${c2}"><div><span class="nombre-llave">${a2.nombre}</span><span class="club-atleta-llave">${a2.club}</span></div></div><button class="btn-lanzar-match" onclick="cargarPeleaDesdeLlave('${a1.nombre}','${a1.club}','${a2.nombre}','${a2.club}','${pF}')">⚡ FIGHT MATCH 1</button></div></div>
-            ${f.length>=3?`<div class="nodo-match nodo-semifinal nodo-semifinal-bottom"><div class="cruce-match-box"><div class="fila-atleta-llave b-rojo ${c3}"><div><span class="nombre-llave">${a3.nombre}</span><span class="club-atleta-llave">${a3.club}</span></div></div><div class="fila-atleta-llave b-azul ${c4}"><div><span class="nombre-llave">${a4.nombre}</span><span class="club-atleta-llave">${a4.club}</span></div></div><button class="btn-lanzar-match" onclick="cargarPeleaDesdeLlave('${a3.nombre}','${a3.club}','${a4.nombre}','${a4.club}','${pF}')">⚡ FIGHT MATCH 2</button></div></div>`:''}
-        </div>
-        <div class="bracket-columna"><div class="bracket-titulo-ronda">GRAN FINAL</div>
-            <div class="nodo-match nodo-final"><div class="cruce-match-box" style="border-color:#ffd600;"><div class="fila-atleta-llave b-rojo atleta-vacante"><div><span class="nombre-llave">GANADOR 1</span></div></div><div class="fila-atleta-llave b-azul atleta-vacante"><div><span class="nombre-llave">GANADOR 2</span></div></div><button class="btn-lanzar-match" style="background:#222; color:#555;" disabled>ESPERANDO</button></div></div>
-        </div>
-    </div>`;
+window.exportarBaseAtletas = function() {
+    if (poolCompetidores.length === 0) return alert("Base vacía.");
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(poolCompetidores));
+    const dl = document.createElement('a'); 
+    dl.setAttribute("href", dataStr); dl.setAttribute("download", "Torneo_SMTKD.json");
+    document.body.appendChild(dl); dl.click(); dl.remove();
 };
 
-window.cargarPeleaDesdeLlave = function(nomRojo, clubRojo, nomAzul, clubAzul, categoria) {
-    if(nomRojo.includes("VACANTE") || nomAzul.includes("VACANTE")) return;
-    sessionStorage.setItem('smtkd_preload_match', JSON.stringify({nomRojo, clubRojo, nomAzul, clubAzul, categoria}));
+window.importarBaseAtletas = function(e) {
+    const archivo = e.target.files[0]; if (!archivo) return;
+    const lector = new FileReader();
+    lector.onload = function(evt) {
+        try {
+            const importados = JSON.parse(evt.target.result);
+            if (Array.isArray(importados)) {
+                poolCompetidores = importados; 
+                localStorage.setItem('smtkd_competidores', JSON.stringify(poolCompetidores));
+                let lblTotal = document.getElementById('total-inscriptos-lbl');
+                if(lblTotal) lblTotal.innerText = `Atletas: ${poolCompetidores.length}`;
+                renderizarLlaveAutomatica();
+            }
+        } catch(err) { alert("Error leyendo JSON."); }
+    };
+    lector.readAsText(archivo);
+};
+
+window.renderizarLlaveAutomatica = function() {
+    const box = document.getElementById('bracket-render-box');
+    if(!box) return;
+    if(poolCompetidores.length === 0) { 
+        box.innerHTML = "<p style='color:#666;'>No hay competidores para generar la llave.</p>"; 
+        return; 
+    }
+    
+    let html = `<div class="torneo-bracket-container"><div class="bracket-esports-layout"><div class="bracket-columna">`;
+    html += `<div class="bracket-titulo-ronda">CUARTOS DE FINAL</div>`;
+    
+    for(let i=0; i<poolCompetidores.length; i+=2) {
+        let rj = poolCompetidores[i]; let az = poolCompetidores[i+1];
+        let idR = rj ? rj.nombre : 'BYE'; let clubR = rj ? rj.club : '';
+        let idA = az ? az.nombre : 'BYE'; let clubA = az ? az.club : '';
+        
+        let classR = !rj ? 'atleta-vacante' : '';
+        let classA = !az ? 'atleta-vacante' : '';
+        let disBtn = (!rj || !az) ? 'disabled' : '';
+        
+        html += `
+        <div class="cruce-match-box">
+            <div class="fila-atleta-llave b-rojo ${classR}">
+                <div><span class="nombre-llave">${idR}</span><span class="club-atleta-llave">${clubR}</span></div>
+            </div>
+            <div class="fila-atleta-llave b-azul ${classA}">
+                <div><span class="nombre-llave">${idA}</span><span class="club-atleta-llave">${clubA}</span></div>
+            </div>
+            <button class="btn-lanzar-match" onclick="lanzarMatchSetup('${idR}', '${clubR}', '${idA}', '${clubA}')" ${disBtn}>
+                FIGHT MATCH
+            </button>
+        </div>`;
+    }
+    html += `</div></div></div>`;
+    box.innerHTML = html;
+};
+
+window.lanzarMatchSetup = function(rojo, clRojo, azul, clAzul) {
+    sessionStorage.setItem('smtkd_preload_match', JSON.stringify({ rojo, clubRojo: clRojo, azul, clubAzul: clAzul }));
     window.location.href = 'setup.html';
 };
 
-window.exportarBaseAtletas = function() {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(poolCompetidores));
-    const a = document.createElement('a'); a.setAttribute("href", dataStr); a.setAttribute("download", "Base_SMTKD.json"); a.click();
-};
-window.importarBaseAtletas = function(e) {
-    const file = e.target.files[0]; if(!file) return;
-    const r = new FileReader(); r.onload = function(evt) {
-        poolCompetidores = JSON.parse(evt.target.result); localStorage.setItem('smtkd_competidores', JSON.stringify(poolCompetidores)); renderizarLlaveAutomatica();
-    }; r.readAsText(file);
-};
+window.cerrarPantallaTest = function() { document.getElementById('pagina-test').classList.remove('activa'); };
 
-// LOOP DIAGNÓSTICO
+// ================= LÓGICA DE TEST DE MANDOS =================
 function loopTestMandos() {
-    if(!document.getElementById('pagina-test').classList.contains('activa')) return;
+    if(!document.getElementById('pagina-test')?.classList.contains('activa')) {
+        requestAnimationFrame(loopTestMandos); return;
+    }
     const gps = navigator.getGamepads();
     for(let i=0; i<2; i++) {
         let gp = gps[i]; let slot = document.getElementById(`ps-slot-${i}`);
         if(!gp) { if(slot) slot.classList.remove('conectado'); continue; }
         if(slot) slot.classList.add('conectado');
-        document.getElementById(`btn-${i}-down`)?.classList.toggle('prendido', gp.buttons[13]?.pressed);
-        document.getElementById(`btn-${i}-right`)?.classList.toggle('prendido', gp.buttons[15]?.pressed);
+        
+        // Flechas
         document.getElementById(`btn-${i}-up`)?.classList.toggle('prendido', gp.buttons[12]?.pressed);
+        document.getElementById(`btn-${i}-down`)?.classList.toggle('prendido', gp.buttons[13]?.pressed);
         document.getElementById(`btn-${i}-left`)?.classList.toggle('prendido', gp.buttons[14]?.pressed);
-        document.getElementById(`btn-${i}-cr`)?.classList.toggle('prendido', gp.buttons[0]?.pressed);
-        document.getElementById(`btn-${i}-sq`)?.classList.toggle('prendido', gp.buttons[2]?.pressed);
-        document.getElementById(`btn-${i}-tr`)?.classList.toggle('prendido', gp.buttons[3]?.pressed);
-        document.getElementById(`btn-${i}-ci`)?.classList.toggle('prendido', gp.buttons[1]?.pressed);
+        document.getElementById(`btn-${i}-right`)?.classList.toggle('prendido', gp.buttons[15]?.pressed);
+        
+        // Figuras
+        document.getElementById(`btn-${i}-cr`)?.classList.toggle('prendido', gp.buttons[0]?.pressed); 
+        document.getElementById(`btn-${i}-ci`)?.classList.toggle('prendido', gp.buttons[1]?.pressed); 
+        document.getElementById(`btn-${i}-sq`)?.classList.toggle('prendido', gp.buttons[2]?.pressed); 
+        document.getElementById(`btn-${i}-tr`)?.classList.toggle('prendido', gp.buttons[3]?.pressed); 
     }
     requestAnimationFrame(loopTestMandos);
 }
-window.addEventListener("gamepadconnected", () => { let c = navigator.getGamepads().filter(g => g !== null).length; let s = document.getElementById('gamepad-status'); if(s) { s.innerText = `🎮 ${c} MANDO(S) CONECTADO(S) OK`; s.className = 'con-mando'; } });
