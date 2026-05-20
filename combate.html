@@ -1,0 +1,102 @@
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SMTKD - Consola del Operador Táctico</title>
+        <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link rel="stylesheet" href="css/componentes.css">
+        <link rel="stylesheet" href="css/marcador.css">
+    </head>
+    <body class="body-combate">
+
+        <div class="contenedor-marcador">
+            <div class="bando rojo">
+                <div class="columna-lateral">
+                    <div class="bandera" id="bandera-rojo"><img id="img-bandera-rojo" src="" style="width:100%; height:100%; object-fit:cover; border-radius:10px; display:none;"></div>
+                    <div class="modulo-lateral modulo-gamjeom" id="gamjeom-rojo-box"><div class="titulo-gamjeom">GAM-JEOM</div><div class="num-gamjeom" id="flt-rojo">0</div></div>
+                    <div class="contenedor-jueces" id="jueces-rojo-container">
+                        <div class="modulo-lateral" id="j1-rojo-box"><div class="header-juez"><div class="label-modulo">J1</div></div><div class="score-modulo" id="j1-rojo-val">--</div></div>
+                        <div class="modulo-lateral" id="j2-rojo-box"><div class="header-juez"><div class="label-modulo">J2</div></div><div class="score-modulo" id="j2-rojo-val">--</div></div>
+                    </div>
+                </div>
+                <div class="contenido-bando">
+                    <div class="nombre-competidor" id="nombre-display-rojo">HONG</div>
+                    <div class="rank-competidor" id="rank-display-rojo">-</div>
+                    <div class="pais-competidor" id="subtexto-display-rojo">-</div>
+                    <div class="puntos" id="pts-rojo">0</div>
+                    
+                    <div class="panel-operador-rapido">
+                        <div class="fila-rapida">
+                            <button class="btn-op btn-op-pt" onclick="cambiarPuntosDirecto('rojo', 1, null)">+1 PUNTO</button>
+                            <button class="btn-op btn-op-sub" onclick="cambiarPuntosDirecto('rojo', -1, null)">-1</button>
+                        </div>
+                        <div class="fila-rapida">
+                            <button class="btn-op btn-op-gj" onclick="cambiarFalta('rojo', 1)">+ GAM-JEOM</button>
+                            <button class="btn-op btn-op-sub" onclick="cambiarFalta('rojo', -1)">-1</button>
+                        </div>
+                    </div>
+
+                    <div class="rounds-ganados-container"><div class="led-round" id="round-rojo-1"></div><div class="led-round" id="round-rojo-2"></div></div>
+                </div>
+            </div>
+
+            <div class="centro">
+                <div class="cabecera-centro">
+                    <div class="categoria-box" id="categoria-display">CATEGORÍA</div>
+                    <div class="round-box"><div class="round-label" id="lbl-fase">ROUND</div><div class="round-num" id="round-actual">1</div></div>
+                </div>
+                
+                <div class="reloj-nucleo">
+                    <div class="tiempo" id="cronometro">00:00</div>
+                </div>
+
+                <div class="controles-centro-gamer">
+                    <button class="btn-control-main btn-play" id="btn-iniciar" onclick="controlarTiempo()">▶ START / PAUSE</button>
+                    <button class="btn-control-main btn-kyeshi" onclick="iniciarKyeShi()">⏱ TIEMPO MÉDICO</button>
+                    
+                    <div class="fila-botones-tiempo">
+                        <button class="btn-sec-centro" onclick="modificarTiempo(1)">+1 SEG</button>
+                        <button class="btn-sec-centro" onclick="modificarTiempo(-1)">-1 SEG</button>
+                    </div>
+                    
+                    <button class="btn-admin-modal" onclick="abrirModalAdmin()">⚙️ PANEL IVR (GIROS/CABEZA)</button>
+                    <button class="btn-salir-match" onclick="window.location.href='setup.html'">[ ABANDONAR MATCH ]</button>
+                </div>
+            </div>
+
+            <div class="bando azul">
+                <div class="contenido-bando">
+                    <div class="nombre-competidor" id="nombre-display-azul">CHONG</div>
+                    <div class="rank-competidor" id="rank-display-azul">-</div>
+                    <div class="pais-competidor" id="subtexto-display-azul">-</div>
+                    <div class="puntos" id="pts-azul">0</div>
+                    
+                    <div class="panel-operador-rapido">
+                        <div class="fila-rapida">
+                            <button class="btn-op btn-op-pt" onclick="cambiarPuntosDirecto('azul', 1, null)">+1 PUNTO</button>
+                            <button class="btn-op btn-op-sub" onclick="cambiarPuntosDirecto('azul', -1, null)">-1</button>
+                        </div>
+                        <div class="fila-rapida">
+                            <button class="btn-op btn-op-gj" onclick="cambiarFalta('azul', 1)">+ GAM-JEOM</button>
+                            <button class="btn-op btn-op-sub" onclick="cambiarFalta('azul', -1)">-1</button>
+                        </div>
+                    </div>
+
+                    <div class="rounds-ganados-container"><div class="led-round" id="round-azul-1"></div><div class="led-round" id="round-azul-2"></div></div>
+                </div>
+                <div class="columna-lateral">
+                    <div class="bandera" id="bandera-azul"><img id="img-bandera-azul" src="" style="width:100%; height:100%; object-fit:cover; border-radius:10px; display:none;"></div>
+                    <div class="modulo-lateral modulo-gamjeom" id="gamjeom-azul-box"><div class="titulo-gamjeom">GAM-JEOM</div><div class="num-gamjeom" id="flt-azul">0</div></div>
+                    <div class="contenedor-jueces" id="jueces-azul-container">
+                        <div class="modulo-lateral" id="j1-azul-box"><div class="header-juez"><div class="label-modulo">J1</div></div><div class="score-modulo" id="j1-azul-val">--</div></div>
+                        <div class="modulo-lateral" id="j2-azul-box"><div class="header-juez"><div class="label-modulo">J2</div></div><div class="score-modulo" id="j2-azul-val">--</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src="js/combate_engine.js"></script>
+    </body>
+    </html>

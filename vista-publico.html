@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SMTKD - Transmisión Oficial</title>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@500;700;900&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    <link rel="stylesheet" href="css/marcador.css">
+</head>
+<body class="pagina-publico" style="cursor: none;">
+
+    <div class="contenedor-marcador">
+        <div class="bando rojo">
+            <div class="columna-lateral">
+                <div class="bandera"><img id="pub-bandera-rojo" src="" style="width:100%; height:100%; object-fit:cover; display:none; border-radius: 6px;"></div>
+                <div class="modulo-lateral modulo-gamjeom" id="pub-gamjeom-rojo-box"><div class="titulo-gamjeom">GAM-JEOM</div><div class="num-gamjeom" id="pub-flt-rojo">0</div></div>
+                <div class="contenedor-jueces" id="pub-jueces-rojo-container">
+                    <div class="modulo-lateral" id="pub-j1-rojo-box"><div class="header-juez"><div class="label-modulo">J1</div></div><div class="score-modulo" id="pub-j1-rojo-val">--</div></div>
+                    <div class="modulo-lateral" id="pub-j2-rojo-box"><div class="header-juez"><div class="label-modulo">J2</div></div><div class="score-modulo" id="pub-j2-rojo-val">--</div></div>
+                </div>
+            </div>
+            <div class="contenido-bando">
+                <div class="nombre-competidor" id="pub-nombre-rojo">HONG</div>
+                <div class="rank-competidor" id="pub-rank-rojo">-</div>
+                <div class="pais-competidor" id="pub-subtexto-rojo">-</div>
+                <div class="puntos" id="pub-pts-rojo">0</div>
+                <div class="rounds-ganados-container"><div class="led-round" id="pub-round-rojo-1"></div><div class="led-round" id="round-rojo-2"></div></div>
+                <div class="icono-hit-reciente tkd-icon" id="pub-hit-rojo"></div>
+            </div>
+        </div>
+
+        <div class="centro" style="justify-content: flex-start; padding-top: 30px;">
+            <div class="categoria-box" id="pub-categoria">CATEGORÍA</div>
+            <div class="round-box" style="margin-top: 50px;"><div class="round-label" id="pub-lbl-fase">ROUND</div><div class="round-num" id="pub-round-actual">1</div></div>
+            <div class="tiempo-container" style="margin-top: 50px;"><div class="tiempo" id="pub-cronometro">00:00</div></div>
+        </div>
+
+        <div class="bando azul">
+            <div class="contenido-bando">
+                <div class="nombre-competidor" id="pub-nombre-azul">CHONG</div>
+                <div class="rank-competidor" id="pub-rank-azul">-</div>
+                <div class="pais-competidor" id="pub-subtexto-azul">-</div>
+                <div class="puntos" id="pub-pts-azul">0</div>
+                <div class="rounds-ganados-container"><div class="led-round" id="pub-round-azul-1"></div><div class="led-round" id="pub-round-azul-2"></div></div>
+                <div class="icono-hit-reciente tkd-icon" id="pub-hit-azul"></div>
+            </div>
+            <div class="columna-lateral">
+                <div class="bandera"><img id="pub-bandera-azul" src="" style="width:100%; height:100%; object-fit:cover; display:none; border-radius: 6px;"></div>
+                <div class="modulo-lateral modulo-gamjeom" id="pub-gamjeom-azul-box"><div class="titulo-gamjeom">GAM-JEOM</div><div class="num-gamjeom" id="pub-flt-azul">0</div></div>
+                <div class="contenedor-jueces" id="pub-jueces-azul-container">
+                    <div class="modulo-lateral" id="pub-j1-azul-box"><div class="header-juez"><div class="label-modulo">J1</div></div><div class="score-modulo" id="pub-j1-azul-val">--</div></div>
+                    <div class="modulo-lateral" id="pub-j2-azul-box"><div class="header-juez"><div class="label-modulo">J2</div></div><div class="score-modulo" id="pub-j2-azul-val">--</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="pub-modal-round">
+        <div class="modal-box" style="max-width: 1000px; width: 95%;">
+            <div class="modal-titulo" id="pub-modal-r-titulo" style="font-size: 35px;">ROUND TERMINADO</div>
+            <div id="pub-modal-r-ganador" style="font-size: 45px; font-weight: 900; color: #fff;">GANADOR</div>
+            <div class="modal-criterio" id="pub-modal-r-criterio" style="font-size: 20px;">Criterio.</div>
+        </div>
+    </div>
+
+    <script src="js/combate_engine.js"></script>
+</body>
+</html>

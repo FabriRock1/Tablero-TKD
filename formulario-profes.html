@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTKD - Pre-Inscripción de Atletas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
+        body { background-color: #050508; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+        .header { text-align: center; margin-bottom: 30px; }
+        .header h1 { font-family: 'Orbitron', sans-serif; color: #ffd600; font-size: 24px; letter-spacing: 2px; }
+        .header p { color: #888; font-size: 14px; margin-top: 5px; }
+        
+        .container { width: 100%; max-width: 500px; background: #0e0e16; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-label { font-family: 'Orbitron', sans-serif; font-size: 11px; color: #00ddff; margin-bottom: 5px; display: block; }
+        input, select { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; outline: none; }
+        input:focus, select:focus { border-color: #00ddff; box-shadow: 0 0 10px rgba(0,221,255,0.2); }
+        
+        .btn-agregar { width: 100%; background: #00ddff; color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; padding: 15px; border-radius: 8px; cursor: pointer; margin-top: 10px; font-size: 14px; transition: 0.3s; }
+        .btn-agregar:hover { background: #fff; box-shadow: 0 0 15px #00ddff; }
+        
+        .lista-alumnos { margin-top: 30px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px; }
+        .lista-titulo { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #ffd600; margin-bottom: 15px; text-align: center; }
+        .alumno-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #ffd600; }
+        .alumno-info { font-size: 12px; line-height: 1.4; }
+        .alumno-nombre { font-weight: bold; color: #fff; font-size: 14px; }
+        .btn-eliminar { background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        
+        .btn-descargar { width: 100%; background: #ffd600; color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; padding: 15px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-size: 16px; display: none; transition: 0.3s; }
+        .btn-descargar:hover { background: #fff; box-shadow: 0 0 20px #ffd600; }
+        
+        /* Animación para el aviso de éxito */
+        .aviso { display: none; text-align: center; color: #00e676; font-family: 'Orbitron'; font-weight: bold; margin-top: 15px; font-size: 12px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SMTKD REGISTRO</h1>
+        <p>Planilla digital para Maestros y Profesores</p>
+    </div>
+
+    <div class="container">
+        <div class="input-group">
+            <label class="input-label">NOMBRE Y APELLIDO DEL ATLETA</label>
+            <input type="text" id="reg-nombre" placeholder="Ej: Juan Pérez">
+        </div>
+        <div class="input-group">
+            <label class="input-label">ACADEMIA / DELEGACIÓN</label>
+            <input type="text" id="reg-club" placeholder="Ej: Escuela Central TKD">
+        </div>
+        <div class="input-group">
+            <label class="input-label">CINTURÓN</label>
+            <select id="reg-cinturon">
+                <option value="Blanco/Amarillo">Blanco / Amarillo</option>
+                <option value="Verde/Azul">Verde / Azul</option>
+                <option value="Rojo">Rojo</option>
+                <option value="Negro" selected>Negro (Danes)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label class="input-label">CATEGORÍA DE PESO</label>
+            <select id="reg-peso">
+                <option value="MASCULINO -58 KG">MASCULINO -58 KG</option>
+                <option value="MASCULINO -68 KG" selected>MASCULINO -68 KG</option>
+                <option value="MASCULINO -80 KG">MASCULINO -80 KG</option>
+                <option value="FEMENINO -49 KG">FEMENINO -49 KG</option>
+                <option value="FEMENINO -57 KG">FEMENINO -57 KG</option>
+            </select>
+        </div>
+        
+        <button class="btn-agregar" onclick="agregarAlumno()">+ AGREGAR A LA LISTA</button>
+
+        <div class="lista-alumnos" id="zona-lista" style="display: none;">
+            <div class="lista-titulo">ATLETAS CARGADOS (<span id="contador">0</span>)</div>
+            <div id="contenedor-alumnos"></div>
+            <button class="btn-descargar" id="btn-exportar" onclick="descargarJSON()">📥 DESCARGAR PLANILLA OFICIAL</button>
+            <div class="aviso" id="aviso-exito">¡Archivo descargado! Envialo a la organización.</div>
+        </div>
+    </div>
+
+    <script>
+        let alumnos = [];
+
+        function agregarAlumno() {
+            let inputNom = document.getElementById('reg-nombre');
+            let inputClub = document.getElementById('reg-club');
+            let nom = inputNom.value.trim().toUpperCase();
+            let clb = inputClub.value.trim().toUpperCase();
+            let cin = document.getElementById('reg-cinturon').value;
+            let pes = document.getElementById('reg-peso').value;
+
+            if(!nom || !clb) {
+                alert("Por favor, completá el nombre y la academia del atleta.");
+                return;
+            }
+
+            alumnos.push({ nombre: nom, club: clb, cinturon: cin, peso: pes });
+            
+            // Limpiar inputs para el siguiente alumno, pero dejar el club (suele ser el mismo)
+            inputNom.value = "";
+            inputNom.focus();
+            
+            actualizarLista();
+        }
+
+        function eliminarAlumno(index) {
+            alumnos.splice(index, 1);
+            actualizarLista();
+        }
+
+        function actualizarLista() {
+            let contenedor = document.getElementById('contenedor-alumnos');
+            let zonaLista = document.getElementById('zona-lista');
+            let btnExportar = document.getElementById('btn-exportar');
+            let contador = document.getElementById('contador');
+
+            contenedor.innerHTML = "";
+            contador.innerText = alumnos.length;
+
+            if (alumnos.length > 0) {
+                zonaLista.style.display = "block";
+                btnExportar.style.display = "block";
+                
+                alumnos.forEach((al, index) => {
+                    contenedor.innerHTML += `
+                        <div class="alumno-item">
+                            <div class="alumno-info">
+                                <div class="alumno-nombre">${al.nombre}</div>
+                                <div style="color: #aaa;">${al.club} | ${al.cinturon} | ${al.peso}</div>
+                            </div>
+                            <button class="btn-eliminar" onclick="eliminarAlumno(${index})">X</button>
+                        </div>
+                    `;
+                });
+            } else {
+                zonaLista.style.display = "none";
+            }
+        }
+
+        function descargarJSON() {
+            if (alumnos.length === 0) return;
+            
+            // Usamos el nombre del club del primer alumno para nombrar el archivo
+            let nombreArchivo = "Inscripcion_" + alumnos[0].club.replace(/[^a-z0-9]/gi, '_').toUpperCase() + ".json";
+            
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(alumnos));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", nombreArchivo);
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            let aviso = document.getElementById('aviso-exito');
+            aviso.style.display = "block";
+            setTimeout(() => { aviso.style.display = "none"; }, 5000);
+        }
+    </script>
+</body>
+</html>

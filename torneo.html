@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTKD - Gestión de Torneo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/componentes.css">
+    <link rel="stylesheet" href="css/torneo.css">
+</head>
+<body class="body-torneo">
+
+    <button class="btn-volver" onclick="window.location.href='index.html'">← Volver al Menú</button>
+    <div class="setup-header-title" style="margin-top:60px;">GESTIÓN DE TORNEOS Y LLAVES AUTOMÁTICAS</div>
+
+    <div class="setup-container-main" style="max-width: 1200px; display: grid; grid-template-columns: 350px 1fr; gap: 20px; align-items: start;">
+        
+        <div class="setup-card panel-registro-esports">
+            <div class="registro-header text-neon-green"><i class="fa-solid fa-user-plus"></i> 1. ALTA DE COMPETIDOR</div>
+            <div class="input-group"><div class="input-label-cyber">NOMBRE Y APELLIDO</div><input type="text" id="torn-nombre" class="setup-input-cyber input-focus-green" placeholder="Ej: Juan Pérez"></div>
+            <div class="input-group"><div class="input-label-cyber">CLUB / ACADEMIA</div><input type="text" id="torn-club" class="setup-input-cyber input-focus-green" placeholder="Ej: Sedes TKD"></div>
+            <div class="cyber-form-grid" style="gap: 15px;">
+                <div class="input-group">
+                    <div class="input-label-cyber">CINTURÓN</div>
+                    <select id="torn-cinturon" class="setup-select-cyber input-focus-green">
+                        <option value="Negro" selected>Negro (Danes)</option>
+                        <option value="Rojo">Rojo</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <div class="input-label-cyber">PESO</div>
+                    <select id="torn-peso" class="setup-select-cyber input-focus-green">
+                        <option value="MASCULINO -58 KG">MASCULINO -58 KG</option>
+                        <option value="MASCULINO -68 KG" selected>MASCULINO -68 KG</option>
+                    </select>
+                </div>
+            </div>
+            <button class="btn-registro-esports" onclick="guardarAtletaNuevo()">➕ REGISTRAR ATLETA</button>
+            
+            <div class="terminal-sync">
+                <div class="terminal-title"><i class="fa-solid fa-server"></i> DATACENTER OFFLINE</div>
+                <div class="terminal-actions">
+                    <button class="btn-term btn-term-export" onclick="exportarBaseAtletas()">EXPO .JSON</button>
+                    <label class="btn-term btn-term-import">IMPO .JSON<input type="file" accept=".json" onchange="importarBaseAtletas(event)" style="display: none;"></label>
+                </div>
+            </div>
+
+            <hr class="cyber-divider">
+            <div class="registro-header text-neon-gold"><i class="fa-solid fa-sitemap"></i> 2. GENERAR LLAVE</div>
+            <div class="cyber-form-grid" style="gap: 15px;">
+                <div class="input-group"><select id="filtro-cinturon" class="setup-select-cyber input-focus-gold" onchange="renderizarLlaveAutomatica()"><option value="Negro">Negro</option></select></div>
+                <div class="input-group"><select id="filtro-peso" class="setup-select-cyber input-focus-gold" onchange="renderizarLlaveAutomatica()"><option value="MASCULINO -68 KG">MASCULINO -68 KG</option></select></div>
+            </div>
+            <div class="contador-atletas" id="total-inscriptos-lbl">Atletas: 0</div>
+        </div>
+
+        <div class="setup-card" style="min-height: 500px; overflow-x: auto; background: rgba(0,0,0,0.4);">
+            <div class="torneo-bracket-container" id="bracket-render-box"></div>
+        </div>
+    </div>
+<div id="pagina-test">
+    <div class="ps-header">
+        <button class="ps-btn-volver" onclick="cerrarPantallaTest()">←</button>
+        <h2 class="ps-title">COMPROBACIÓN DE MANDOS</h2>
+    </div>
+    
+    <div class="ps-diag-layout">
+        <div class="ps-grid">
+            <div class="ps-slot" id="ps-slot-0">
+                <div class="ps-number">1</div>
+                <div class="ps-info">
+                    <div class="ps-status" id="status-0">SIN CONEXIÓN</div>
+                    <div class="ps-controller-map">
+                        <div class="ps-dpad">
+                            <div id="btn-0-up" class="ps-btn ps-up">▲</div>
+                            <div id="btn-0-left" class="ps-btn ps-left">◀</div>
+                            <div id="btn-0-right" class="ps-btn ps-right">▶</div>
+                            <div id="btn-0-down" class="ps-btn ps-down">▼</div>
+                        </div>
+                        <div class="ps-shapes">
+                            <div id="btn-0-tr" class="ps-btn">▲</div>
+                            <div id="btn-0-sq" class="ps-btn">■</div>
+                            <div id="btn-0-ci" class="ps-btn">●</div>
+                            <div id="btn-0-cr" class="ps-btn">✖</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="ps-slot" id="ps-slot-1">
+                <div class="ps-number">2</div>
+                <div class="ps-info">
+                    <div class="ps-status" id="status-1">SIN CONEXIÓN</div>
+                    <div class="ps-controller-map">
+                        <div class="ps-dpad">
+                            <div id="btn-1-up" class="ps-btn ps-up">▲</div>
+                            <div id="btn-1-left" class="ps-btn ps-left">◀</div>
+                            <div id="btn-1-right" class="ps-btn ps-right">▶</div>
+                            <div id="btn-1-down" class="ps-btn ps-down">▼</div>
+                        </div>
+                        <div class="ps-shapes">
+                            <div id="btn-1-tr" class="ps-btn">▲</div>
+                            <div id="btn-1-sq" class="ps-btn">■</div>
+                            <div id="btn-1-ci" class="ps-btn">●</div>
+                            <div id="btn-1-cr" class="ps-btn">✖</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <script src="js/torneo_setup.js"></script>
+</body>
+</html>
