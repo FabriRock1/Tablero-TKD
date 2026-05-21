@@ -5,7 +5,7 @@
 const canalTransmision = new BroadcastChannel('smtkd_transmision');
 let r = JSON.parse(sessionStorage.getItem('smtkd_active_match_rules'));
 
-// BLINDAJE: Si 'r' no existe o está vacío, cargamos los valores por defecto para que el reloj no quede en 0
+// BLINDAJE: Si 'r' no existe, cargamos los valores por defecto
 let configPelea = (r && Object.keys(r).length > 0) ? r : { tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 };
 
 let combate = { 
@@ -224,7 +224,7 @@ function terminarDescanso() {
     actualizarPantallaCombate(); 
 }
 
-// ================= LÓGICA DE FIN DE ROUND Y GUARDADO =================
+// ================= LÓGICA DE FIN DE ROUND Y AUTO-AVANCE =================
 function evaluarSuperioridad() {
     let r = combate.rojo; let a = combate.azul;
     if(r.puntos !== a.puntos) return procesarFinRound(r.puntos>a.puntos?'rojo':'azul', "Puntos Netos.");
@@ -240,22 +240,35 @@ function procesarFinRound(ganador, motivo) {
     if(configPelea.sistema === 'best3') {
         if(combate.rojo.roundsGanados >= 2) { 
             ganadorDelCombate = 'rojo'; 
-            guardarResultadoEnHistorial('rojo', motivo);
+            guardarProgresoLlave('rojo');
             abrirModalFinal("COMBATE FINALIZADO", "GANADOR: HONG (ROJO)", motivo); 
         }
         else if(combate.azul.roundsGanados >= 2) { 
             ganadorDelCombate = 'azul'; 
-            guardarResultadoEnHistorial('azul', motivo);
+            guardarProgresoLlave('azul');
             abrirModalFinal("COMBATE FINALIZADO", "GANADOR: CHONG (AZUL)", motivo); 
         }
         else { abrirModalFinal(`ROUND ${roundActual} TERMINADO`, `GANADOR: ${ganador.toUpperCase()}`, motivo); }
     } else {
         if(roundActual >= 3) { 
             ganadorDelCombate = combate.rojo.puntos>combate.azul.puntos?'rojo':'azul'; 
-            guardarResultadoEnHistorial(ganadorDelCombate, "Puntaje Acumulativo.");
+            guardarProgresoLlave(ganadorDelCombate);
             abrirModalFinal("COMBATE FIN", `GANADOR: ${ganadorDelCombate.toUpperCase()}`, "Puntaje Acumulativo."); 
         }
         else abrirModalFinal(`ROUND ${roundActual} TERMINADO`, "PREPARAR SIGUIENTE ROUND", motivo);
+    }
+}
+
+// --> CORRECCIÓN: ACÁ SE GUARDA QUIÉN GANÓ CONSOLIDADO DESDE LAS REGLAS ACTIVAS <--
+function guardarProgresoLlave(ganador) {
+    if(r && r.keyLlave && r.matchId) {
+        let prog = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
+        if(!prog[r.keyLlave]) prog[r.keyLlave] = {};
+        
+        let idGanador = ganador === 'rojo' ? r.idRojo : r.idAzul;
+        prog[r.keyLlave][r.matchId] = idGanador;
+        
+        localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(prog));
     }
 }
 
@@ -266,15 +279,14 @@ function abrirModalFinal(tit, gan, crit) {
     document.getElementById('st-pu-r').innerText = combate.rojo.punio; document.getElementById('st-pu-a').innerText = combate.azul.punio;
     document.getElementById('st-pe-r').innerText = combate.rojo.peto; document.getElementById('st-pe-a').innerText = combate.azul.peto;
     document.getElementById('st-ca-r').innerText = combate.rojo.casco; document.getElementById('st-ca-a').innerText = combate.azul.casco;
-    
-    // Si usas las IDs agregadas para las estadisticas completas:
-    let stPegR = document.getElementById('st-peg-r'); if (stPegR) stPegR.innerText = combate.rojo.petogiro;
-    let stPegA = document.getElementById('st-peg-a'); if (stPegA) stPegA.innerText = combate.azul.petogiro;
-    let stCagR = document.getElementById('st-cag-r'); if (stCagR) stCagR.innerText = combate.rojo.cascogiro;
-    let stCagA = document.getElementById('st-cag-a'); if (stCagA) stCagA.innerText = combate.azul.cascogiro;
-
     document.getElementById('st-gj-r').innerText = combate.azul.gamjeoms; document.getElementById('st-gj-a').innerText = combate.rojo.gamjeoms;
     
+    let btnContinuar = document.getElementById('btn-modal-accion');
+    if(ganadorDelCombate && btnContinuar) {
+        btnContinuar.innerHTML = "🏆 VOLVER A LA LLAVE PARA SIGUIENTE COMBATE";
+        btnContinuar.style.background = "linear-gradient(180deg, #00ddff 0%, #0088aa 100%)";
+    }
+
     document.getElementById('modal-round').style.display = 'flex';
     document.getElementById('modal-round').classList.add('activa');
     canalTransmision.postMessage({ comandoAccion: "MOSTRAR_ESTADISTICAS_PUBLICO", tituloRound: tit, ganadorRoundTexto: gan, criterioRoundTexto: crit });
@@ -285,7 +297,9 @@ window.avanzarSiguientePaso = function() {
     document.getElementById('modal-round').style.display = 'none';
     canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
     
-    if(ganadorDelCombate) { window.location.href = 'setup.html'; }
+    if(ganadorDelCombate) { 
+        window.location.href = 'torneo.html'; 
+    }
     else {
         roundActual++; if(configPelea.sistema === 'best3') { ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); }
         fase = 'descanso'; tiempoRestante = configPelea.tiempoDescanso; document.getElementById('lbl-fase').innerText = "DESCANSO"; actualizarPantallaCombate();
@@ -296,44 +310,10 @@ window.avanzarSiguientePaso = function() {
 
 window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.display="grid"; document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
 
-// Función para guardar en historial
-function guardarResultadoEnHistorial(ganador, motivo) {
-    let historial = JSON.parse(localStorage.getItem('smtkd_historial_peleas')) || [];
-    let nuevoRegistro = {
-        fecha: new Date().toLocaleString(),
-        categoria: configPelea.categoria || "OFICIAL WT",
-        rojo: { nombre: configPelea.nombreRojo || "HONG", club: configPelea.clubRojo || "", puntosFinales: combate.rojo.puntos },
-        azul: { nombre: configPelea.nombreAzul || "CHONG", club: configPelea.clubAzul || "", puntosFinales: combate.azul.puntos },
-        ganador: ganador === 'rojo' ? (configPelea.nombreRojo || "HONG") : (configPelea.nombreAzul || "CHONG"),
-        bandoGanador: ganador.toUpperCase(),
-        criterio: motivo
-    };
-    historial.push(nuevoRegistro);
-    localStorage.setItem('smtkd_historial_peleas', JSON.stringify(historial));
-}
-
-// Función global para exportar el historial (puedes llamarla desde un botón en tu menú)
-window.exportarHistorialTorneo = function() {
-    let datos = localStorage.getItem('smtkd_historial_peleas');
-    if (!datos) return alert("Aún no hay combates registrados en el historial.");
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(datos);
-    const dl = document.createElement('a'); 
-    dl.setAttribute("href", dataStr); 
-    dl.setAttribute("download", "Resultados_Torneo_SMTKD.json");
-    document.body.appendChild(dl); dl.click(); dl.remove();
-};
-
 // ================= RECEPTOR DE TV Y CELULARES =================
 canalTransmision.onmessage = function(e) {
     let d = e.data; 
-    
-    // ---> CAPTURA DE VOTO MOBILE (MANDO TÁCTIL) <---
-    if (d.comandoAccion === "VOTO_MOBILE") {
-        if(document.getElementById('cronometro')) { // Solo la compu central procesa esto
-            window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez);
-        }
-        return;
-    }
+    if (d.comandoAccion === "VOTO_MOBILE") { if(document.getElementById('cronometro')) { window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez); } return; }
 
     const iconClasses = { 'punio': 'icon-punio', 'peto': 'icon-peto', 'casco': 'icon-casco', 'petogiro': 'icon-petogiro', 'cascogiro': 'icon-cascogiro' };
     
@@ -371,22 +351,15 @@ canalTransmision.onmessage = function(e) {
             let numDisplay = document.getElementById(`pub-pts-${d.hitBando}`);
             if (numDisplay) {
                 numDisplay.classList.remove('hit'); void numDisplay.offsetWidth; numDisplay.classList.add('hit');
-                
-                let contenedorPadre = numDisplay.parentElement;
-                let flotante = document.createElement('div');
-                flotante.className = 'texto-flotante-tv';
-                
+                let contenedorPadre = numDisplay.parentElement; let flotante = document.createElement('div'); flotante.className = 'texto-flotante-tv';
                 let colorIcono = d.hitBando === 'rojo' ? '#ff3344' : '#00ddff';
                 flotante.innerHTML = `<span class="tkd-icon ${iconClasses[d.hitTipo]}" style="width: 8vw; height: 8vw; display:block; filter: drop-shadow(0 0 10px ${colorIcono});"></span><span style="font-size: 6vw;">+${d.hitCantidad}</span>`;
-                
-                contenedorPadre.appendChild(flotante);
-                setTimeout(() => { flotante.remove(); }, 1200);
+                contenedorPadre.appendChild(flotante); setTimeout(() => { flotante.remove(); }, 1200);
             }
         }
     }
 };
 
-// ================= LECTURA JOYSTICKS FÍSICOS =================
 function loopGamepadsCombate() {
     if(document.getElementById('cronometro') && !document.getElementById('modal-admin')?.classList.contains('activa') && !document.getElementById('modal-round')?.classList.contains('activa')) {
         const gps = navigator.getGamepads();

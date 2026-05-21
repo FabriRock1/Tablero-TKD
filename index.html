@@ -7,13 +7,175 @@
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/componentes.css">
+    <style>
+        /* ========================================================
+           INTERFAZ HUD SMTKD - BRANDING DE COMPETENCIA TAEKWONDO
+           ======================================================== */
+        
+        body.body-menu {
+            background-color: #030408 !important;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* AMBIENTACIÓN CROMÁTICA DE ESTADIO (HONG / CHONG) */
+        .iluminacion-estadio {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: 
+                radial-gradient(ellipse at 15% 15%, rgba(255, 51, 68, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 15%, rgba(0, 221, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, #070914 0%, #030408 100%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* SILUETAS DE COMBATE VECTORIALES (TAEKWONDO PRO)
+           Dos atletas en posición de combate real de alta resolución integrados al fondo.
+           Opacidad calibrada al 0.02 para máxima elegancia.
+        */
+        .siluetas-tkd-fondo {
+            position: fixed;
+            top: 52%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 85vh;
+            height: 60vh;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" fill="%23ffffff"><path d="M190 280c-5-15-20-45-10-60s30-10 40 5 15 45 5 60-30 10-40-5zm-30-70c10-25-5-60-30-70s-55 10-60 35 15 55 40 65 40-10 50-30zm320-40c20-15 50-10 65 10s10 50-10 65-50 10-65-10-10-50 10-65zM150 320l90-130 50 40-60 110-80-20zm380-60l110 30 30 90-120-40-20-80z"/><path d="M220 190l180-80c15-8 35-2 42 12l98 198c8 15 2 35-12 42l-30 15c-15 8-35 2-42-12L370 210l-120 50-30-70zm240 120l160 40c18 4 30 22 26 40l-8 38c-4 18-22 30-40 26l-174-42 36-102z"/></svg>');
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: contain;
+            opacity: 0.02;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* MARCO PERIMETRAL TÁCTICO HUD */
+        .hud-esquinas-marcas {
+            position: fixed;
+            top: 25px; bottom: 25px; left: 25px; right: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.02);
+            z-index: 2;
+            pointer-events: none;
+        }
+        /* Corchetes angulares en las esquinas */
+        .hud-esquinas-marcas::before {
+            content: ''; position: absolute; top: 0; left: 0; width: 15px; height: 15px;
+            border-top: 2px solid rgba(0, 221, 255, 0.2); border-left: 2px solid rgba(0, 221, 255, 0.2);
+        }
+        .hud-esquinas-marcas::after {
+            content: ''; position: absolute; bottom: 0; right: 0; width: 15px; height: 15px;
+            border-bottom: 2px solid rgba(255, 51, 68, 0.2); border-right: 2px solid rgba(255, 51, 68, 0.2);
+        }
+
+        /* TEXTOS DE DATACENTER SUPERIOR */
+        .hud-top-datacenter {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.15);
+            letter-spacing: 5px;
+            font-weight: 900;
+        }
+
+        .menu-container-central {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 1000px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .menu-logo {
+            font-size: 3.8rem !important;
+            font-weight: 900;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+        .glow-text {
+            color: #ffd600 !important;
+            text-shadow: 0 0 25px #ffd600, 0 0 50px rgba(255, 214, 0, 0.3) !important;
+        }
+        .menu-tagline {
+            color: #49566e !important;
+            font-weight: 900;
+            letter-spacing: 4px;
+            font-size: 11px !important;
+        }
+
+        /* CONTENEDORES HUD TRASLÚCIDOS */
+        .tarjeta-pro {
+            background: rgba(7, 10, 19, 0.85) !important;
+            border: 2px solid #1a2333 !important;
+            box-shadow: 0 30px 60px rgba(0,0,0,0.7) !important;
+            backdrop-filter: blur(14px);
+            border-radius: 20px;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.2) !important;
+        }
+
+        /* Brillos base constantes por bando */
+        .kyorugi { border-color: rgba(255, 214, 0, 0.25) !important; }
+        .kyorugi .tarjeta-icon { color: #ffd600 !important; border-color: rgba(255, 214, 0, 0.25) !important; background: #06080e !important; }
+        .kyorugi .tarjeta-info p { color: #ffd600; opacity: 0.6; }
+
+        .torneo { border-color: rgba(0, 221, 255, 0.25) !important; }
+        .torneo .tarjeta-icon { color: #00ddff !important; border-color: rgba(0, 221, 255, 0.25) !important; background: #040812 !important; }
+        .torneo .tarjeta-info p { color: #00ddff; opacity: 0.6; }
+
+        /* Efectos Hover de Alta Reactividad */
+        .kyorugi:hover {
+            border-color: #ffd600 !important;
+            box-shadow: 0 0 45px rgba(255, 214, 0, 0.3), inset 0 0 15px rgba(255, 214, 0, 0.1) !important;
+            transform: translateY(-8px) !important;
+        }
+        .kyorugi:hover .tarjeta-icon { box-shadow: 0 0 25px #ffd600 !important; background: rgba(255, 214, 0, 0.05) !important; }
+        .kyorugi:hover .tarjeta-info p { opacity: 1; text-shadow: 0 0 8px #ffd600; }
+
+        .torneo:hover {
+            border-color: #00ddff !important;
+            box-shadow: 0 0 45px rgba(0, 221, 255, 0.3), inset 0 0 15px rgba(0, 221, 255, 0.1) !important;
+            transform: translateY(-8px) !important;
+        }
+        .torneo:hover .tarjeta-icon { box-shadow: 0 0 25px #00ddff !important; background: rgba(0, 221, 255, 0.05) !important; }
+        .torneo:hover .tarjeta-info p { opacity: 1; text-shadow: 0 0 8px #00ddff; }
+
+        /* FOOTER TÉCNICO COMPLETO (DATACENTER STATUS) */
+        .hud-datacenter-footer {
+            position: absolute;
+            bottom: 30px; left: 45px; right: 45px;
+            display: flex; justify-content: space-between;
+            font-family: 'Orbitron', sans-serif; font-size: 10px;
+            color: #313d52; letter-spacing: 2px; font-weight: 900;
+            border-top: 1px dashed rgba(255,255,255,0.03); padding-top: 15px;
+            z-index: 20;
+        }
+        .pulse-node {
+            display: inline-block; width: 6px; height: 6px; background: #00e676;
+            border-radius: 50%; margin-right: 6px; box-shadow: 0 0 10px #00e676;
+            animation: latidoIndicador 1.5s infinite alternate;
+        }
+        @keyframes latidoIndicador { 0% { opacity: 0.3; } 100% { opacity: 1; } }
+    </style>
 </head>
 <body class="body-menu">
 
+    <div class="iluminacion-estadio"></div>
+    <div class="siluetas-tkd-fondo"></div>
+    <div class="hud-esquinas-marcas"></div>
+    
+    <div class="hud-top-datacenter">WT OFFICIAL REGULATIONS // SEED: OK</div>
+    
     <div id="pagina-menu" class="menu-container-central">
-        <div class="menu-bg-gradient"></div>
-        <div class="menu-grid-overlay"></div>
-        
         <div class="menu-header">
             <h1 class="menu-logo">SISTEMA INTEGRAL <span class="glow-text">SMTKD</span></h1>
             <p class="menu-tagline">PLATAFORMA DE GESTIÓN TÁCTICA PARA ARTES MARCIALES</p>
@@ -25,8 +187,8 @@
                     <div class="tarjeta-icon"><i class="fa-solid fa-hand-fist"></i></div>
                     <div class="tarjeta-info">
                         <h3>KYORUGI</h3>
-                        <p>MODO COMBATE WT</p>
-                        <span class="btn-acceder">CONFIGURAR <i class="fa-solid fa-chevron-right"></i></span>
+                        <p>ARBITRAJE ELECTRÓNICO WT</p>
+                        <span class="btn-acceder" style="color: #ffd600;">CONFIGURAR <i class="fa-solid fa-chevron-right"></i></span>
                     </div>
                 </div>
             </div>
@@ -36,12 +198,18 @@
                     <div class="tarjeta-icon"><i class="fa-solid fa-diagram-project"></i></div>
                     <div class="tarjeta-info">
                         <h3>GESTIÓN DE LLAVES</h3>
-                        <p>TORNEOS Y PRE-CARGA</p>
-                        <span class="btn-acceder">ENTRAR <i class="fa-solid fa-chevron-right"></i></span>
+                        <p>BRACKETMASTER PROGRAM</p>
+                        <span class="btn-acceder" style="color: #00ddff;">ENTRAR <i class="fa-solid fa-chevron-right"></i></span>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <div class="hud-datacenter-footer">
+        <div><span class="pulse-node"></span> SERVER STATUS: ONLINE // PORT: 3000</div>
+        <div>SYSTEM: OFF-LINE SYNC</div>
+        <div>DATA SYNC: LOCALHOST_OK</div>
     </div>
 
 </body>

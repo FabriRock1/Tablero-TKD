@@ -304,3 +304,19 @@ body {
 
 .ps-btn.prendido { color: #000 !important; border-color: #ffd600 !important; background: #ffd600 !important; box-shadow: 0 0 15px rgba(255,214,0,0.6); font-weight: bold; transform: scale(1.1); }
 .ps-stick.prendido { background: rgba(255,214,0,0.4) !important; border-color: #ffd600 !important; box-shadow: 0 0 15px rgba(255,214,0,0.6); transform: scale(1.1); }
+/* Panel de Torneo más compacto */
+.panel-registro-esports {
+    gap: 12px !important; /* Reducimos el espacio entre elementos */
+    padding: 20px !important;
+}
+
+.input-group { margin-bottom: 8px !important; }
+
+/* Hacemos que los selectores ocupen menos altura */
+.setup-select-cyber, .setup-input-cyber {
+    padding: 8px 10px !important;
+    font-size: 12px !important;
+}
+
+/* Reducimos el tamaño de las fuentes un poco para que no sobrepase la altura */
+.registro-header { font-size: 11px !important; margin-bottom: 5px !important; }

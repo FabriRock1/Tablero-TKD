@@ -2,41 +2,48 @@
    ESTILOS DE LA LLAVE DE TORNEO (BRACKET E-SPORTS)
    ======================================================== */
 
-/* CONTENEDOR PRINCIPAL DEL ÁRBOL */
+/* =========================================================================
+   1. LAYOUT HORIZONTAL (EL ÁRBOL) - SOLO REEMPLAZÁ ESTA PARTE
+   ========================================================================= */
+
 .torneo-bracket-container {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 60px;
-    padding: 40px;
-    min-width: 800px;
+    width: 100%;
+    overflow-x: auto; /* Fundamental para mover el árbol de lado a lado */
+    padding-bottom: 20px;
 }
+
 .bracket-esports-layout {
     display: flex;
-    align-items: center;
-    gap: 60px;
+    flex-direction: row; /* Esto pone las columnas una al lado de la otra */
+    align-items: center; /* Centra todo el árbol verticalmente */
+    gap: 60px; /* Distancia horizontal entre Cuartos, Semis, Final */
+    width: max-content; /* Evita que las tarjetas se aplasten */
+    padding: 40px 20px 20px 20px;
 }
+
 .bracket-columna {
     display: flex;
     flex-direction: column;
-    gap: 50px;
+    justify-content: space-around;
+    gap: 40px; /* Distancia vertical entre una tarjeta y la de abajo */
     position: relative;
 }
 
-/* TÍTULOS DE RONDA (Ej: Semifinales, Gran Final) */
 .bracket-titulo-ronda {
     font-family: 'Orbitron', sans-serif;
-    color: #00ddff;
-    text-align: center;
-    font-size: 14px;
+    font-size: 11px;
     font-weight: 900;
-    letter-spacing: 4px;
-    margin-bottom: 20px;
-    position: absolute;
-    top: -45px;
-    width: 100%;
-    text-shadow: 0 0 15px rgba(0, 221, 255, 0.5);
+    color: #ffd600;
+    letter-spacing: 2px;
     text-transform: uppercase;
+    background: rgba(255, 214, 0, 0.05);
+    padding: 6px 12px;
+    border-left: 3px solid #ffd600;
+    border-radius: 4px;
+    position: absolute;
+    top: -45px; /* Lo ancla arriba de la columna */
+    left: 0;
+    white-space: nowrap; /* Evita que el título se parta en dos líneas */
 }
 
 /* CAJA DE COMBATE (EFECTO GLASSMORPHISM) */
@@ -185,4 +192,69 @@
     border-top: 3px solid #00ddff;
     box-shadow: 0 -2px 10px rgba(0,221,255,0.4);
     z-index: -1;
+}
+
+/* BOTONES FLOTANTES DE EDICIÓN EN LA LLAVE */
+.acciones-match-flotantes {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+.btn-match-accion {
+    background: #1a1c29;
+    border: 2px solid #333;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+.btn-match-accion.edit:hover { background: #00ddff; border-color: #00ddff; color: #000; box-shadow: 0 0 15px rgba(0,221,255,0.4); }
+.btn-match-accion.delete:hover { background: #ff3344; border-color: #ff3344; color: #fff; box-shadow: 0 0 15px rgba(255,51,68,0.4); }
+
+/* ========================================================
+   CONTROLES DE MOVIMIENTO (FLECHAS) Y DESHACER
+   ======================================================== */
+.acciones-mover-cyber {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    z-index: 10;
+}
+.acciones-mover-cyber i {
+    color: #475569;
+    font-size: 10px;
+    cursor: pointer;
+    padding: 5px;
+    background: rgba(0,0,0,0.5);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.acciones-mover-cyber i:hover {
+    color: #ffd600;
+    background: rgba(255,214,0,0.2);
+}
+
+.btn-match-accion.undo {
+    background: #1a1c29;
+    border-color: #00ddff;
+    color: #00ddff;
+}
+.btn-match-accion.undo:hover {
+    background: #00ddff;
+    color: #000;
+    box-shadow: 0 0 15px rgba(0,221,255,0.4);
 }
