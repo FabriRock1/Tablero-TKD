@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMTKD - Comprobación de Controles</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Teko:wght@700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; font-family: 'Orbitron', sans-serif; }
+        
+        /* Aclaramos sutilmente el fondo base de la pantalla para mejorar la visibilidad global */
+        body { background-color: #0d1226; color: #fff; height: 100vh; display: flex; overflow: hidden; }
+        
+        .layout { display: flex; width: 100vw; height: 100vh; }
+        .main-panel { flex: 1; padding: 40px 60px; display: flex; flex-direction: column; }
+        .side-panel { width: 340px; border-left: 2px solid rgba(0, 221, 255, 0.15); display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(15, 20, 38, 0.6); box-shadow: inset 10px 0 30px rgba(0,0,0,0.6); }
+
+        /* Cabecera HUD Estilo Consola */
+        .header { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 50px; }
+        .btn-volver { width: 42px; height: 42px; border-radius: 50%; border: 2px solid #00ddff; background: transparent; color: #00ddff; font-size: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; box-shadow: 0 0 15px rgba(0, 221, 255, 0.2); transition: all 0.15s ease; }
+        .btn-volver:hover { background: #00ddff; color: #05050a; box-shadow: 0 0 25px #00ddff; transform: scale(1.05); }
+        .header-text h3 { font-size: 11px; color: #ffd600; letter-spacing: 3px; margin-bottom: 4px; text-transform: uppercase; font-weight: 900; text-shadow: 0 0 10px rgba(255,214,0,0.4); }
+        .header-text h1 { font-size: 36px; font-weight: 900; letter-spacing: 1px; margin-bottom: 8px; text-transform: uppercase; font-style: italic; text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        .header-text p { font-size: 13px; color: #8da2be; font-weight: bold; }
+
+        /* Grilla de Mandos Balanceada */
+        .grid-mandos { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 40px; flex: 1; }
+        
+        /* Slot de Mando en Estado de Espera (Gris intermedio visible, no tan oscuro) */
+        .mando-slot { 
+            display: flex; 
+            align-items: center; 
+            gap: 25px; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+            opacity: 0.35; 
+            padding: 15px;
+            border-radius: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.01);
+        }
+        
+        /* EXPLOSIÓN DE LUZ EXTRA AL CONECTARSE (Igual a tu imagen de referencia) */
+        .mando-slot.conectado { 
+            opacity: 1; 
+            background: rgba(0, 230, 118, 0.06);
+            border: 2px solid #00e676;
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.25), inset 0 0 20px rgba(0, 230, 118, 0.1);
+            animation: pulseGlowMando 2s infinite alternate;
+        }
+        
+        @keyframes pulseGlowMando {
+            0% { box-shadow: 0 0 25px rgba(0, 230, 118, 0.2), inset 0 0 15px rgba(0, 230, 118, 0.05); }
+            100% { box-shadow: 0 0 45px rgba(0, 230, 118, 0.45), inset 0 0 25px rgba(0, 230, 118, 0.2); border-color: #33ff9e; }
+        }
+
+        .mando-num { font-family: 'Teko', sans-serif; font-size: 190px; font-weight: 900; color: rgba(255,255,255,0.06); line-height: 0.8; width: 85px; text-align: center; transition: all 0.3s; }
+        .mando-slot.conectado .mando-num { color: #00e676; text-shadow: 0 0 25px rgba(0,230,118,0.6); }
+
+        /* Mapa de Controles HUD */
+        .mando-map { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 280px; }
+        .status-text { font-size: 12px; font-weight: 900; color: #a0aec0; letter-spacing: 2px; text-transform: uppercase; background: rgba(255,255,255,0.03); padding: 4px 10px; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05); display: inline-block; width: fit-content; }
+        .mando-slot.conectado .status-text { color: #fff; background: #00e676; border-color: #33ff9e; text-shadow: 0 1px 3px rgba(0,0,0,0.5); box-shadow: 0 0 15px rgba(0,230,118,0.4); }
+
+        .fila-sup { display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        .fila-inf { display: flex; justify-content: space-between; width: 100%; align-items: center; background: rgba(0, 0, 0, 0.4); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); }
+        .triggers-group { display: flex; flex-direction: column; gap: 4px; }
+
+        /* Botones HUD Estilo Consola (Aclarados para sintonía) */
+        .ps-btn { display: flex; align-items: center; justify-content: center; background: #141929; border: 2px solid #2d3758; color: #64748b; font-size: 9px; font-weight: 900; border-radius: 6px; transition: all 0.1s ease; }
+        .btn-top { width: 48px; height: 20px; font-family: 'Orbitron'; }
+        .btn-stick { width: 32px; height: 32px; border-radius: 50%; font-size: 10px; }
+
+        /* D-PAD y Formas Geométricas */
+        .grid-pad { display: grid; grid-template-columns: repeat(3, 18px); grid-template-rows: repeat(3, 18px); gap: 3px; }
+        .pad-btn { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #2d3758; background: #090d1a; border: 1px solid rgba(255,255,255,0.02); border-radius: 4px; transition: all 0.05s ease; }
+        .up { grid-area: 1 / 2 / 2 / 3; } .left { grid-area: 2 / 1 / 3 / 2; } .right { grid-area: 2 / 3 / 3 / 4; } .down { grid-area: 3 / 2 / 4 / 3; }
+
+        /* REACCIÓN AL PRESIONAR BOTONES FÍSICOS */
+        .ps-btn.active { color: #fff; border-color: #ffd600; background: #222947; box-shadow: 0 0 15px #ffd600; transform: scale(1.05); }
+        .btn-stick.active { background: rgba(255,214,0,0.3); border-color: #ffd600; color: #ffd600; box-shadow: 0 0 15px #ffd600; transform: scale(1.05); }
+        
+        /* Encendido de Colores Neón Nítidos */
+        .pad-btn.active { color: #fff; border-color: #fff; transform: scale(1.1); }
+        .pad-btn.up.active, .pad-btn.down.active, .pad-btn.left.active, .pad-btn.right.active { color: #ffd600; border-color: #ffd600; box-shadow: 0 0 15px #ffd600; text-shadow: 0 0 8px #ffd600; }
+        .pad-btn.tr.active { color: #00ff88; border-color: #00ff88; box-shadow: 0 0 18px #00ff88; text-shadow: 0 0 8px #00ff88; } 
+        .pad-btn.ci.active { color: #ff3344; border-color: #ff3344; box-shadow: 0 0 18px #ff3344; text-shadow: 0 0 8px #ff3344; } 
+        .pad-btn.sq.active { color: #ff00ff; border-color: #ff00ff; box-shadow: 0 0 18px #ff00ff; text-shadow: 0 0 8px #ff00ff; } 
+        .pad-btn.cr.active { color: #00ddff; border-color: #00ddff; box-shadow: 0 0 18px #00ddff; text-shadow: 0 0 8px #00ddff; } 
+
+        /* Panel Derecho Flotante */
+        .mapping-title { font-size: 13px; color: #ffd600; font-weight: 900; letter-spacing: 3px; text-align: center; line-height: 1.6; margin-bottom: 30px; text-shadow: 0 0 10px rgba(255,214,0,0.3); text-transform: uppercase; }
+        .mapping-icons { display: flex; gap: 15px; font-size: 32px; color: #1e294b; font-weight: bold; }
+        .mapping-icons span { display: inline-block; animation: flotarIconosPs 3s ease-in-out infinite alternate; }
+        .mapping-icons span:nth-child(2) { animation-delay: 0.4s; }
+        .mapping-icons span:nth-child(3) { animation-delay: 0.8s; }
+        .mapping-icons span:nth-child(4) { animation-delay: 1.2s; }
+
+        @keyframes flotarIconosPs {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(-12px); color: #00ddff; filter: drop-shadow(0 0 15px #00ddff); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout">
+        <div class="main-panel">
+            <div class="header">
+                <button class="btn-volver" onclick="window.history.back()">←</button>
+                <div class="header-text">
+                    <h3>SMTKD OPERATOR</h3>
+                    <h1>comprobación de controles</h1>
+                    <p>Empareje los mandos con el dispositivo y verifique la conexión oprimiendo cualquier botón</p>
+                </div>
+            </div>
+
+            <div class="grid-mandos">
+                <script>
+                    for(let i=0; i<4; i++) {
+                        document.write(`
+                        <div class="mando-slot" id="slot-${i}">
+                            <div class="mando-num">${i+1}</div>
+                            <div class="mando-map">
+                                <div class="fila-sup">
+                                    <div class="triggers-group">
+                                        <div class="ps-btn btn-top" id="btn-${i}-l2">L2</div>
+                                        <div class="ps-btn btn-top" id="btn-${i}-l1">L1</div>
+                                    </div>
+                                    <div class="status-text" id="status-${i}">Sin conexión</div>
+                                    <div class="triggers-group">
+                                        <div class="ps-btn btn-top" id="btn-${i}-r2">R2</div>
+                                        <div class="ps-btn btn-top" id="btn-${i}-r1">R1</div>
+                                    </div>
+                                </div>
+                                <div class="fila-inf">
+                                    <div class="grid-pad">
+                                        <div class="pad-btn up" id="btn-${i}-up">▲</div>
+                                        <div class="pad-btn left" id="btn-${i}-left">◀</div>
+                                        <div class="pad-btn right" id="btn-${i}-right">▶</div>
+                                        <div class="pad-btn down" id="btn-${i}-down">▼</div>
+                                    </div>
+                                    <div class="triggers-group" style="flex-direction:row; gap:10px;">
+                                        <div class="ps-btn btn-stick" id="btn-${i}-l3">L</div>
+                                        <div class="ps-btn btn-stick" id="btn-${i}-r3">R</div>
+                                    </div>
+                                    <div class="grid-pad">
+                                        <div class="pad-btn up tr" id="btn-${i}-tr">▲</div>
+                                        <div class="pad-btn left sq" id="btn-${i}-sq">■</div>
+                                        <div class="pad-btn right ci" id="btn-${i}-ci">●</div>
+                                        <div class="pad-btn down cr" id="btn-${i}-cr">✖</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>`);
+                    }
+                </script>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="mapping-title">HONG / CHONG<br>MAPPING READY</div>
+            <div class="mapping-icons">
+                <span>▲</span>
+                <span>●</span>
+                <span>✖</span>
+                <span>■</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const gamepadMap = {
+            0: 'cr', 1: 'ci', 2: 'sq', 3: 'tr',
+            4: 'l1', 5: 'r1', 6: 'l2', 7: 'r2',
+            10: 'l3', 11: 'r3',
+            12: 'up', 13: 'down', 14: 'left', 15: 'right'
+        };
+
+        function loopDiagnostics() {
+            const gamepads = navigator.getGamepads();
+            for(let i=0; i<4; i++) {
+                let gp = gamepads[i];
+                let slot = document.getElementById(`slot-${i}`);
+                let status = document.getElementById(`status-${i}`);
+                
+                if(gp) {
+                    slot.classList.add('conectado');
+                    status.innerText = "Conectado - Mando " + (i+1) + " Ready";
+                    
+                    for(let mapIndex in gamepadMap) {
+                        let btnId = `btn-${i}-${gamepadMap[mapIndex]}`;
+                        let element = document.getElementById(btnId);
+                        if(element) {
+                            if(gp.buttons[mapIndex]?.pressed) {
+                                element.classList.add('active');
+                            } else {
+                                element.classList.remove('active');
+                            }
+                        }
+                    }
+                } else {
+                    slot.classList.remove('conectado');
+                    status.innerText = "Sin conexión - Esperando...";
+                }
+            }
+            document.dispatchEvent(new Event('gamepadlooped'));
+            requestAnimationFrame(loopDiagnostics);
+        }
+        requestAnimationFrame(loopDiagnostics);
+    </script>
+</body>
+</html>

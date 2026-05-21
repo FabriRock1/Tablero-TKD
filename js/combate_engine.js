@@ -5,7 +5,9 @@
 const canalTransmision = new BroadcastChannel('smtkd_transmision');
 let r = JSON.parse(sessionStorage.getItem('smtkd_active_match_rules'));
 
-let configPelea = r || { tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 };
+// BLINDAJE: Si 'r' no existe o está vacío, cargamos los valores por defecto para que el reloj no quede en 0
+let configPelea = (r && Object.keys(r).length > 0) ? r : { tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 };
+
 let combate = { 
     rojo: { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: 0 }, 
     azul: { puntos: 0, gamjeoms: 0, casco: 0, peto: 0, punio: 0, petogiro: 0, cascogiro: 0, roundsGanados: 0 } 
@@ -22,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('rank-display-azul').innerText = r?.rankAzul || "SEED";
         document.getElementById('categoria-display').innerText = r?.categoria || "DIVISIÓN OFICIAL WT";
         
-        // RUTAS DE BANDERAS RESTAURADAS COMO ESTABAN (banderas/)
         let imgRojo = document.getElementById('img-bandera-rojo');
         if (r?.paisRojo && imgRojo) { imgRojo.src = `banderas/${r.paisRojo.toLowerCase()}.png`; imgRojo.style.display='block'; imgRojo.onerror = () => imgRojo.style.display='none'; }
         
@@ -169,182 +170,6 @@ window.detenerCronometroFuerza = function() {
     corriendo = false; 
     let btn = document.getElementById('btn-iniciar'); 
     if(btn){btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359";} 
-};
-
-window.modificarTiempo = function(s) { 
-    tiempoRestante = Math.max(0, tiempoRestante + s); 
-    actualizarPantallaCombate(); 
-};
-
-window.iniciarKyeShi = function() { 
-    if(ganadorDelCombate || fase !== 'pelea') return; 
-    if(corriendo) { clearInterval(intervalo); corriendo = false; }
-    
-    tiempoPeleaGuardado = tiempoRestante; 
-    fase = 'kyeshi'; 
-    tiempoRestante = configPelea.tiempoMedico; 
-    
-    let lbl = document.getElementById('lbl-fase'); 
-    if(lbl) lbl.innerText = "TIEMPO MÉDICO"; 
-    
-    let btn = document.getElementById('btn-iniciar');
-    if(btn) { btn.innerText = "TERMINAR MÉDICO"; btn.style.background = "#1a1c29"; }
-
-    actualizarPantallaCombate();
-    corriendo = true;
-    intervalo = setInterval(() => { 
-        if(tiempoRestante > 0) { tiempoRestante--; actualizarPantallaCombate(); } 
-        else { terminarKyeShi(); } 
-    }, 1000); 
-};
-
-function terminarKyeShi() { 
-    clearInterval(intervalo); 
-    corriendo = false; 
-    fase = 'pelea'; 
-    tiempoRestante = tiempoPeleaGuardado; 
-    
-    let lbl = document.getElementById('lbl-fase'); 
-    if(lbl) lbl.innerText = "ROUND"; 
-    
-    let btn = document.getElementById('btn-iniciar');
-    if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359"; }
-    
-    actualizarPantallaCombate(); 
-}
-
-function terminarDescanso() { 
-    clearInterval(intervalo); 
-    corriendo = false; 
-    fase = 'pelea'; 
-    tiempoRestante = configPelea.tiempoRound; 
-    let lbl = document.getElementById('lbl-fase'); 
-    if(lbl) lbl.innerText = "ROUND"; 
-    actualizarPantallaCombate(); 
-}
-
-// ================= LÓGICA DE FIN DE ROUND Y GUARDADO =================
-function evaluarSuperioridad() {
-    let r = combate.rojo; let a = combate.azul;
-    if(r.puntos !== a.puntos) return procesarFinRound(r.puntos>a.puntos?'rojo':'azul', "Puntos Netos.");
-    let gR = (r.petogiro*4)+(r.cascogiro*6); let gA = (a.petogiro*4)+(a.cascogiro*6);
-    if(gR !== gA) return procesarFinRound(gR>gA?'rojo':'azul', "Puntos por Giros.");
-    if(r.casco !== a.casco) return procesarFinRound(r.casco>a.casco?'rojo':'azul', "Impactos a la Cabeza.");
-    if(r.peto !== a.peto) return procesarFinRound(r.peto>a.peto?'rojo':'azul', "Impactos al Peto.");
-    document.getElementById('contenedor-estadisticas').style.display = "none"; document.getElementById('contenedor-voto-manual').style.display = "block"; document.getElementById('btn-modal-accion').style.display = "none"; document.getElementById('modal-round').classList.add('activa');
-}
-
-function procesarFinRound(ganador, motivo) {
-    combate[ganador].roundsGanados++; actualizarPantallaCombate();
-    if(configPelea.sistema === 'best3') {
-        if(combate.rojo.roundsGanados >= 2) { 
-            ganadorDelCombate = 'rojo'; 
-            guardarResultadoEnHistorial('rojo', motivo);
-            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: HONG (ROJO)", motivo); 
-        }
-        else if(combate.azul.roundsGanados >= 2) { 
-            ganadorDelCombate = 'azul'; 
-            guardarResultadoEnHistorial('azul', motivo);
-            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: CHONG (AZUL)", motivo); 
-        }
-        else { abrirModalFinal(`ROUND ${roundActual} TERMINADO`, `GANADOR: ${ganador.toUpperCase()}`, motivo); }
-    } else {
-        if(roundActual >= 3) { 
-            ganadorDelCombate = combate.rojo.puntos>combate.azul.puntos?'rojo':'azul'; 
-            guardarResultadoEnHistorial(ganadorDelCombate, "Puntaje Acumulativo.");
-            abrirModalFinal("COMBATE FIN", `GANADOR: ${ganadorDelCombate.toUpperCase()}`, "Puntaje Acumulativo."); 
-        }
-        else abrirModalFinal(`ROUND ${roundActual} TERMINADO`, "PREPARAR SIGUIENTE ROUND", motivo);
-    }
-}
-
-function abrirModalFinal(tit, gan, crit) {
-    if(!document.getElementById('modal-round')) return;
-    document.getElementById('modal-r-titulo').innerText = tit; document.getElementById('modal-r-ganador').innerText = gan; document.getElementById('modal-r-criterio').innerText = "Criterio: " + crit;
-    document.getElementById('st-pt-r').innerText = combate.rojo.puntos; document.getElementById('st-pt-a').innerText = combate.azul.puntos;
-    document.getElementById('st-pu-r').innerText = combate.rojo.punio; document.getElementById('st-pu-a').innerText = combate.azul.punio;
-    document.getElementById('st-pe-r').innerText = combate.rojo.peto; document.getElementById('st-pe-a').innerText = combate.azul.peto;
-    document.getElementById('st-ca-r').innerText = combate.rojo.casco; document.getElementById('st-ca-a').innerText = combate.azul.casco;
-    
-    let stPegR = document.getElementById('st-peg-r'); if (stPegR) stPegR.innerText = combate.rojo.petogiro;
-    let stPegA = document.getElementById('st-peg-a'); if (stPegA) stPegA.innerText = combate.azul.petogiro;
-    let stCagR = document.getElementById('st-cag-r'); if (stCagR) stCagR.innerText = combate.rojo.cascogiro;
-    let stCagA = document.getElementById('st-cag-a'); if (stCagA) stCagA.innerText = combate.azul.cascogiro;
-
-    document.getElementById('st-gj-r').innerText = combate.azul.gamjeoms; document.getElementById('st-gj-a').innerText = combate.rojo.gamjeoms;
-    
-    document.getElementById('modal-round').style.display = 'flex';
-    document.getElementById('modal-round').classList.add('activa');
-    canalTransmision.postMessage({ comandoAccion: "MOSTRAR_ESTADISTICAS_PUBLICO", tituloRound: tit, ganadorRoundTexto: gan, criterioRoundTexto: crit });
-}
-
-window.avanzarSiguientePaso = function() {
-    document.getElementById('modal-round').classList.remove('activa');
-    document.getElementById('modal-round').style.display = 'none';
-    canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
-    
-    if(ganadorDelCombate) { window.location.href = 'setup.html'; }
-    else {
-        roundActual++; if(configPelea.sistema === 'best3') { ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); }
-        fase = 'descanso'; tiempoRestante = configPelea.tiempoDescanso; document.getElementById('lbl-fase').innerText = "DESCANSO"; actualizarPantallaCombate();
-        corriendo = true;
-        intervalo = setInterval(() => { if(tiempoRestante>0) { tiempoRestante--; actualizarPantallaCombate(); } else { terminarDescanso(); } }, 1000);
-    }
-};
-
-window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.display="grid"; document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
-
-// Función para guardar en historial
-function guardarResultadoEnHistorial(ganador, motivo) {
-    let historial = JSON.parse(localStorage.getItem('smtkd_historial_peleas')) || [];
-    let nuevoRegistro = {
-        fecha: new Date().toLocaleString(),
-        categoria: configPelea.categoria || "OFICIAL WT",
-        rojo: { nombre: configPelea.nombreRojo || "HONG", club: configPelea.clubRojo || "", puntosFinales: combate.rojo.puntos },
-        azul: { nombre: configPelea.nombreAzul || "CHONG", club: configPelea.clubAzul || "", puntosFinales: combate.azul.puntos },
-        ganador: ganador === 'rojo' ? (configPelea.nombreRojo || "HONG") : (configPelea.nombreAzul || "CHONG"),
-        bandoGanador: ganador.toUpperCase(),
-        criterio: motivo
-    };
-    historial.push(nuevoRegistro);
-    localStorage.setItem('smtkd_historial_peleas', JSON.stringify(historial));
-}
-
-// Función global para exportar el historial
-window.exportarHistorialTorneo = function() {
-    let datos = localStorage.getItem('smtkd_historial_peleas');
-    if (!datos) return alert("Aún no hay combates registrados en el historial.");
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(datos);
-    const dl = document.createElement('a'); 
-    dl.setAttribute("href", dataStr); 
-    dl.setAttribute("download", "Resultados_Torneo_SMTKD.json");
-    document.body.appendChild(dl); dl.click(); dl.remove();
-};
-
-// ================= RECEPTOR DE TV Y CELULARES =================
-canalTransmision.onmessage = function(e) {
-    let d = e.data; 
-    
-    // ---> CAPTURA DE VOTO MOBILE (MANDO TÁCTIL) <---
-    if (d.comandoAccion === "VOTO_MOBILE") {
-        if(document.getElementById('cronometro')) { 
-            window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez);
-        }
-        return;
-    }
-
-    const iconClasses = { 'punio': 'icon-punio', 'peto': 'icon-peto', 'casco': 'icon-casco', 'petogiro': 'icon-petogiro', 'cascogiro': 'icon-cascogiro' };
-    
-    if(!document.getElementById('cronometro')) {
-        if(d.comandoAccion === "VOTO_JUEZ") {
-            let b = document.getElementById(`pub-${d.juez}-${d.bando}-box`); let v = document.getElementById(`pub-${d.juez}-${d.bando}-val`);
-            if(b && v) { v.innerText = d.cantidad>0?`+${d.cantidad}`:d.cantidad; b.classList.add('parpadeo-voto'); setTimeout(()=>{b.classList.remove('parpadeo-voto'); v.innerText="--";},900); } return;
-        }
-        if(d.comandoAccion === "MOSTRAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-r-titulo').innerText = d.tituloRound; document.getElementById('pub-modal-r-ganador').innerText = d.ganadorRoundTexto; document.getElementById('pub-modal-r-criterio').innerText = d.criterioRoundTexto; document.getElementById('pub-modal-round').classList.add('activa'); document.getElementById('pub-modal-round').style.display='flex'; return; }
-        if(d.comandoAccion === "OCULTAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-round').classList.remove('activa'); document.getElementById('pub-modal-round').style.display='none'; return; }
-
-        document.getElementById('pub-nombre-rojo').innerText = d.nombreRojo; document.getElementById('pub-subtexto-rojo').innerText = d.subtextoRojo; document.getElementById('pub-rank-rojo').innerText = d.rankRojo;
-   innerText = "▶ START / PAUSE"; btn.style.background = "#00b359";} 
 };
 
 window.modificarTiempo = function(s) { 

@@ -2,31 +2,28 @@
 // SETUP DE TORNEO, LLAVES AUTOMÁTICAS Y PRUEBA DE MANDOS (COMPLETO)
 // =========================================================================
 
-const paisesDisponibles = [
-    { code: "ar", name: "🇦🇷 Argentina" }, { code: "br", name: "🇧🇷 Brasil" }, { code: "cl", name: "🇨🇱 Chile" },
-    { code: "co", name: "🇨🇴 Colombia" }, { code: "pe", name: "🇵🇪 Perú" }, { code: "uy", name: "🇺🇾 Uruguay" }, 
-    { code: "mx", name: "🇲🇽 México" }, { code: "us", name: "🇺🇸 Estados Unidos" }, { code: "kr", name: "🇰🇷 Corea del Sur" }
-];
-
 let poolCompetidores = JSON.parse(localStorage.getItem('smtkd_competidores')) || [];
+
+// Captura unificada del HUD para todos los selectores analógicos, países y sistemas
+let valoresHUD = {
+    sistema: 'best3',
+    jueces: '2_2',
+    paisRojo: 'ar',
+    paisAzul: 'br',
+    min: 1,
+    seg: 30,
+    'desc-min': 1,
+    'desc-seg': 0,
+    'med-min': 1,
+    'med-seg': 0,
+    'gj-max': 5,
+    'pg-pts': 12
+};
 
 document.addEventListener("DOMContentLoaded", () => {
     // --- 1. INICIALIZACIÓN DE SETUP.HTML ---
-    const selRojo = document.getElementById("cfg-pais-rojo");
-    const selAzul = document.getElementById("cfg-pais-azul");
-    
-    if(selRojo && selAzul) {
-        // Cargar lista de países
-        paisesDisponibles.sort((a,b) => a.name.localeCompare(b.name)).forEach(p => {
-            let oR = new Option(p.name, p.code); 
-            let oA = new Option(p.name, p.code);
-            if(p.code === "ar") oR.selected = true; 
-            if(p.code === "br") oA.selected = true;
-            selRojo.add(oR); 
-            selAzul.add(oA);
-        });
-
-        // Autocompletar si venimos de la pantalla de llaves
+    if(document.getElementById('cfg-nombre-rojo')) {
+        // Autocompletar si venimos de la pantalla de llaves automáticas
         const precarga = JSON.parse(sessionStorage.getItem('smtkd_preload_match'));
         if(precarga) {
             if(document.getElementById('cfg-nombre-rojo')) document.getElementById('cfg-nombre-rojo').value = precarga.rojo || "";
@@ -35,6 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById('cfg-subtexto-azul')) document.getElementById('cfg-subtexto-azul').value = precarga.clubAzul || "";
             sessionStorage.removeItem('smtkd_preload_match'); 
         }
+
+        // Sincronizar todos los casilleros y campos digitales con el estado de inicio
+        actualizarTodosLosDisplaysHUD();
+
+        // Activamos el chequeo de joysticks en tiempo real para el cartel del Setup
+        requestAnimationFrame(loopDeteccionFisica);
     }
 
     // --- 2. INICIALIZACIÓN DE TORNEO.HTML ---
@@ -46,53 +49,169 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-// ================= LÓGICA DE SETUP.HTML =================
+// ================= LÓGICA DE SELECCIÓN INTERACTIVA HUD Países / Reglas =================
+window.seleccionarOpcionHUD = function(campo, valor, elemento) {
+    valoresHUD[campo] = valor;
+    
+    const contenedor = elemento.parentElement;
+    const botones = contenedor.querySelectorAll('.btn-selector-cyber');
+    botones.forEach(btn => btn.classList.remove('activo'));
+    
+    elemento.classList.add('activo');
+};
+
+// ================= INCREMENTADORES Y LIMITADORES DIGITALES HUD (BOTONES + / -) =================
+window.cambiarValorHUD = function(llave, incremento) {
+    let valorActual = valoresHUD[llave];
+    let nuevoValor = valorActual + incremento;
+
+    if (llave.endsWith('min')) {
+        if (nuevoValor < 0) nuevoValor = 0;
+        if (nuevoValor > 9) nuevoValor = 9;
+    } else if (llave.endsWith('seg')) {
+        if (nuevoValor < 0) {
+            let minLlave = llave.replace('seg', 'min');
+            if (valoresHUD[minLlave] > 0) {
+                valoresHUD[minLlave]--;
+                document.getElementById(`lbl-${minLlave}`).value = valoresHUD[minLlave].toString().padStart(2, '0');
+                nuevoValor = 55;
+            } else {
+                nuevoValor = 0;
+            }
+        }
+        if (nuevoValor > 55) {
+            let minLlave = llave.replace('seg', 'min');
+            if (valoresHUD[minLlave] < 9) {
+                valoresHUD[minLlave]++;
+                document.getElementById(`lbl-${minLlave}`).value = valoresHUD[minLlave].toString().padStart(2, '0');
+                nuevoValor = 0;
+            } else {
+                nuevoValor = 55;
+            }
+        }
+    } else if (llave === 'gj-max') {
+        if (nuevoValor < 1) nuevoValor = 1;
+        if (nuevoValor > 10) nuevoValor = 10;
+    } else if (llave === 'pg-pts') {
+        if (nuevoValor < 1) nuevoValor = 1;
+        if (nuevoValor > 30) nuevoValor = 30;
+    }
+
+    valoresHUD[llave] = nuevoValor;
+    
+    let displayElement = document.getElementById(`lbl-${llave}`);
+    if (displayElement) {
+        displayElement.value = llave.endsWith('seg') || llave.endsWith('min') 
+            ? nuevoValor.toString().padStart(2, '0') 
+            : nuevoValor;
+    }
+};
+
+// ================= LÓGICA DE CAPTURA DIRECTA DESDE EL TECLADO (INPUT CHANGE) =================
+window.validarEntradaTeclado = function(llave, elemento) {
+    let valorIngresado = parseInt(elemento.value);
+    
+    if (isNaN(valorIngresado)) {
+        actualizarDisplayEspecifico(llave);
+        return;
+    }
+
+    if (llave.endsWith('min')) {
+        if (valorIngresado < 0) valorIngresado = 0;
+        if (valorIngresado > 9) valorIngresado = 9;
+    } else if (llave.endsWith('seg')) {
+        if (valorIngresado < 0) valorIngresado = 0;
+        if (valorIngresado > 59) valorIngresado = 59;
+    } else if (llave === 'gj-max') {
+        if (valorIngresado < 1) valorIngresado = 1;
+        if (valorIngresado > 10) valorIngresado = 10;
+    } else if (llave === 'pg-pts') {
+        if (valorIngresado < 1) valorIngresado = 1;
+        if (valorIngresado > 30) valorIngresado = 30;
+    }
+
+    valoresHUD[llave] = valorIngresado;
+    actualizarDisplayEspecifico(llave);
+};
+
+function actualizarTodosLosDisplaysHUD() {
+    for (let llave in valoresHUD) {
+        if (llave !== 'sistema' && llave !== 'jueces' && llave !== 'paisRojo' && llave !== 'paisAzul') {
+            actualizarDisplayEspecifico(llave);
+        }
+    }
+}
+
+function actualizarDisplayEspecifico(llave) {
+    let input = document.getElementById(`lbl-${llave}`);
+    if (input) {
+        input.value = llave.endsWith('seg') || llave.endsWith('min') 
+            ? valoresHUD[llave].toString().padStart(2, '0') 
+            : valoresHUD[llave];
+    }
+}
+
+// ================= LOOP DETECCIÓN DE MANDOS PARA SETUP.HTML =================
+function loopDeteccionFisica() {
+    const indicadorMando = document.getElementById('gamepad-status');
+    if (!indicadorMando) return;
+
+    const gamepads = navigator.getGamepads();
+    let cantidadConectados = 0;
+
+    for (let i = 0; i < gamepads.length; i++) {
+        if (gamepads[i]) {
+            cantidadConectados++;
+        }
+    }
+
+    if (cantidadConectados > 0) {
+        indicadorMando.className = "con-mando";
+        indicadorMando.innerText = `🎮 ¡Mandos listos! (${cantidadConectados} detectado${cantidadConectados > 1 ? 's' : ''})`;
+    } else {
+        indicadorMando.className = "sin-mando";
+        indicadorMando.innerText = "🎮 Esperando mandos...";
+    }
+
+    requestAnimationFrame(loopDeteccionFisica);
+}
+
+// ================= LÓGICA DE CAPTURA Y GUARDADO DE COMBATE =================
 window.guardarYComenzar = function() {
     let reglas = {};
 
     reglas.nombreRojo = document.getElementById('cfg-nombre-rojo')?.value.trim() || "HONG";
     reglas.clubRojo = document.getElementById('cfg-subtexto-rojo')?.value.trim() || "";
     reglas.rankRojo = document.getElementById('cfg-rank-rojo')?.value.trim() || "";
-    reglas.paisRojo = document.getElementById('cfg-pais-rojo')?.value || "ar";
+    reglas.paisRojo = valoresHUD.paisRojo;
 
     reglas.nombreAzul = document.getElementById('cfg-nombre-azul')?.value.trim() || "CHONG";
     reglas.clubAzul = document.getElementById('cfg-subtexto-azul')?.value.trim() || "";
     reglas.rankAzul = document.getElementById('cfg-rank-azul')?.value.trim() || "";
-    reglas.paisAzul = document.getElementById('cfg-pais-azul')?.value || "br";
+    reglas.paisAzul = valoresHUD.paisAzul;
 
     reglas.categoria = document.getElementById('cfg-categoria-combate')?.value.trim() || "DIVISIÓN OFICIAL WT";
 
-    // Obtener configuración de tiempos en segundos
-    let tMin = parseInt(document.getElementById('cfg-min')?.value) || 1;
-    let tSeg = parseInt(document.getElementById('cfg-seg')?.value) || 30;
-    reglas.tiempoRound = (tMin * 60) + tSeg;
+    reglas.tiempoRound = (valoresHUD.min * 60) + valoresHUD.seg;
+    reglas.tiempoDescanso = (valoresHUD['desc-min'] * 60) + valoresHUD['desc-seg'];
+    reglas.tiempoMedico = (valoresHUD['med-min'] * 60) + valoresHUD['med-seg'];
 
-    let dMin = parseInt(document.getElementById('cfg-desc-min')?.value) || 1;
-    let dSeg = parseInt(document.getElementById('cfg-desc-seg')?.value) || 0;
-    reglas.tiempoDescanso = (dMin * 60) + dSeg;
+    reglas.sistema = valoresHUD.sistema;
 
-    let mMin = parseInt(document.getElementById('cfg-med-min')?.value) || 1;
-    let mSeg = parseInt(document.getElementById('cfg-med-seg')?.value) || 0;
-    reglas.tiempoMedico = (mMin * 60) + mSeg;
-
-    reglas.sistema = document.getElementById('cfg-sistema')?.value || 'best3';
-
-    let configMandos = document.getElementById('cfg-jueces')?.value.split('_') || ["1", "1"];
+    let configMandos = valoresHUD.jueces.split('_');
     reglas.mandosActivos = parseInt(configMandos[0]);
     reglas.coincidenciasRequeridas = parseInt(configMandos[1]);
 
     reglas.gamjeomLimiteActivo = document.getElementById('cfg-gj-act')?.checked ?? true;
-    reglas.gamjeomMax = parseInt(document.getElementById('cfg-gj-max')?.value) || 5;
+    reglas.gamjeomMax = valoresHUD['gj-max'];
     reglas.pointGapActivo = document.getElementById('cfg-pg-act')?.checked ?? true;
-    reglas.pointGapPts = parseInt(document.getElementById('cfg-pg-pts')?.value) || 12;
+    reglas.pointGapPts = valoresHUD['pg-pts'];
 
     sessionStorage.setItem('smtkd_active_match_rules', JSON.stringify(reglas));
     window.location.href = 'combate.html';
 };
 
-window.abrirPantallaPublico = function() { window.open('vista-publico.html', 'SMTKD_Estadio', 'width=1280,height=720'); };
-
-// ================= LÓGICA DE TORNEO.HTML (LLAVES Y OFFLINE) =================
+// ================= GESTIÓN COMPETIDORES BRACKETS =================
 window.guardarAtletaNuevo = function() {
     let nom = document.getElementById('torn-nombre').value.trim().toUpperCase();
     let clb = document.getElementById('torn-club').value.trim().toUpperCase();
@@ -179,7 +298,7 @@ window.lanzarMatchSetup = function(rojo, clRojo, azul, clAzul) {
 
 window.cerrarPantallaTest = function() { document.getElementById('pagina-test').classList.remove('activa'); };
 
-// ================= LÓGICA DE TEST DE MANDOS =================
+// ================= TEST DE MANDOS INTERNOS ORIGINALES =================
 function loopTestMandos() {
     if(!document.getElementById('pagina-test')?.classList.contains('activa')) {
         requestAnimationFrame(loopTestMandos); return;
@@ -190,13 +309,11 @@ function loopTestMandos() {
         if(!gp) { if(slot) slot.classList.remove('conectado'); continue; }
         if(slot) slot.classList.add('conectado');
         
-        // Flechas
         document.getElementById(`btn-${i}-up`)?.classList.toggle('prendido', gp.buttons[12]?.pressed);
         document.getElementById(`btn-${i}-down`)?.classList.toggle('prendido', gp.buttons[13]?.pressed);
         document.getElementById(`btn-${i}-left`)?.classList.toggle('prendido', gp.buttons[14]?.pressed);
         document.getElementById(`btn-${i}-right`)?.classList.toggle('prendido', gp.buttons[15]?.pressed);
         
-        // Figuras
         document.getElementById(`btn-${i}-cr`)?.classList.toggle('prendido', gp.buttons[0]?.pressed); 
         document.getElementById(`btn-${i}-ci`)?.classList.toggle('prendido', gp.buttons[1]?.pressed); 
         document.getElementById(`btn-${i}-sq`)?.classList.toggle('prendido', gp.buttons[2]?.pressed); 

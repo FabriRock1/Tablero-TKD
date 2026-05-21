@@ -8,6 +8,166 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="css/componentes.css">
     <link rel="stylesheet" href="css/marcador.css">
+    <style>
+        /* ========================================================
+           INTERFAZ HUD GAMER CONTROLLER - SINTONÍA COMPLETA PRE-COMBATE
+           ======================================================== */
+        .reglas-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 1fr); 
+            gap: 20px; 
+            width: 100%;
+        }
+        
+        .regla-item { 
+            background: rgba(7, 9, 17, 0.6); 
+            border: 2px solid rgba(255, 255, 255, 0.04); 
+            padding: 22px; 
+            border-radius: 14px; 
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            height: 125px;
+        }
+
+        .grid-span-completo {
+            grid-column: span 3;
+            height: auto;
+            min-height: 90px;
+            flex-direction: row !important;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Bloques de Competidores en Sintonía HUD */
+        .atleta-box-cyber {
+            background: rgba(6, 8, 15, 0.7) !important;
+            border: 2px solid rgba(255,255,255,0.03) !important;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            transition: all 0.2s ease;
+        }
+        .rojo-cyber { border-left: 6px solid #ff3344 !important; }
+        .azul-cyber { border-left: 6px solid #00ddff !important; }
+
+        .setup-input-cyber {
+            background: #030509 !important;
+            border: 2px solid rgba(255,255,255,0.04) !important;
+            color: #ffd600 !important;
+            font-family: 'Orbitron', sans-serif !important;
+            font-weight: 900 !important;
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: all 0.2s ease;
+        }
+        .setup-input-cyber:focus {
+            border-color: #ffd600 !important;
+            box-shadow: 0 0 10px rgba(255,214,0,0.2) !important;
+            background: #000 !important;
+        }
+
+        .cyber-selector-grupo {
+            display: flex;
+            background: #04060b;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 4px;
+            gap: 4px;
+            width: 100%;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.9);
+            margin-top: auto;
+        }
+
+        .btn-selector-cyber {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #475569;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 12px 6px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-selector-cyber.activo {
+            background: linear-gradient(180deg, #242942 0%, #131625 100%);
+            color: #ffd600;
+            border: 1px solid rgba(255, 214, 0, 0.3);
+            text-shadow: 0 0 10px rgba(255, 214, 0, 0.6);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 2px rgba(255,255,255,0.1);
+        }
+
+        /* Ajustadores Incrementales Digitales HUD */
+        .tiempo-inputs { 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 4px; 
+            background: #030508; 
+            padding: 6px 10px; 
+            border-radius: 8px; 
+            border: 2px solid rgba(255,255,255,0.03);
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.8);
+            margin-top: auto;
+            width: 100%;
+        }
+
+        .btn-ajuste-hud {
+            background: #141824;
+            border: 1px solid #2d3748;
+            color: #a0aec0;
+            font-size: 12px;
+            font-weight: 900;
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+        }
+        .btn-ajuste-hud:hover {
+            background: #1e2538;
+            color: #ffd600;
+            border-color: #ffd600;
+        }
+        .btn-ajuste-hud:active { transform: scale(0.9); }
+
+        .num-mini-hud-editable { 
+            width: 38px; 
+            text-align: center; 
+            background: transparent; 
+            border: none; 
+            border-bottom: 2px solid transparent; 
+            color: #ffd600; 
+            font-family: 'Orbitron', sans-serif;
+            font-size: 18px; 
+            font-weight: 900; 
+            outline: none; 
+            text-shadow: 0 0 6px rgba(255, 214, 0, 0.4);
+            transition: all 0.2s ease;
+            -moz-appearance: textfield;
+        }
+        .num-mini-hud-editable::-webkit-outer-spin-button,
+        .num-mini-hud-editable::-webkit-inner-spin-button {
+            -webkit-appearance: none; margin: 0;
+        }
+        .num-mini-hud-editable:focus { 
+            border-bottom-color: #ffd600;
+            background: rgba(255, 214, 0, 0.05);
+        }
+
+        .separador-digital { color: #475569; font-weight: 900; font-size: 14px; padding: 0 2px; }
+        .flex-toggle-box { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: auto; }
+    </style>
 </head>
 <body class="body-setup">
 
@@ -23,23 +183,47 @@
                         <div class="cyber-badge-bando">HONG (ROJO)</div>
                         <div class="cyber-form-grid">
                             <div class="input-group grid-span-2"><div class="input-label-cyber">🥋 ATLETA</div><input type="text" id="cfg-nombre-rojo" class="setup-input-cyber" value="HONG"></div>
-                            <div class="input-group"><div class="input-label-cyber">🌍 PAÍS</div><select id="cfg-pais-rojo" class="setup-select-cyber"></select></div>
-                            <div class="input-group"><div class="input-label-cyber">🏅 RANK</div><input type="text" id="cfg-rank-rojo" class="setup-input-cyber text-center" value="SEED #1"></div>
+                            
+                            <div class="input-group grid-span-2">
+                                <div class="input-label-cyber">🌍 PAÍS</div>
+                                <div class="cyber-selector-grupo" id="grupo-pais-rojo">
+                                    <button type="button" class="btn-selector-cyber activo" onclick="seleccionarOpcionHUD('paisRojo', 'ar', this)">ARG 🇦🇷</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisRojo', 'br', this)">BRA 🇧🇷</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisRojo', 'cl', this)">CHI 🇨🇱</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisRojo', 'us', this)">USA 🇺🇸</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisRojo', 'kr', this)">KOR 🇰🇷</button>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group grid-span-2"><div class="input-label-cyber">🏅 RANK</div><input type="text" id="cfg-rank-rojo" class="setup-input-cyber" value="SEED #1"></div>
                             <div class="input-group grid-span-2"><div class="input-label-cyber">🏢 CLUB</div><input type="text" id="cfg-subtexto-rojo" class="setup-input-cyber" value="BUENOS AIRES CLUB"></div>
                         </div>
                     </div>
+                    
                     <div class="cyber-vs-divider"><div class="vs-text">VS</div><div class="vs-line"></div></div>
+                    
                     <div class="atleta-box-cyber azul-cyber">
                         <div class="cyber-badge-bando">CHONG (AZUL)</div>
                         <div class="cyber-form-grid">
                             <div class="input-group grid-span-2"><div class="input-label-cyber">🥋 ATLETA</div><input type="text" id="cfg-nombre-azul" class="setup-input-cyber" value="CHONG"></div>
-                            <div class="input-group"><div class="input-label-cyber">🌍 PAÍS</div><select id="cfg-pais-azul" class="setup-select-cyber"></select></div>
-                            <div class="input-group"><div class="input-label-cyber">🏅 RANK</div><input type="text" id="cfg-rank-azul" class="setup-input-cyber text-center" value="SEED #2"></div>
+                            
+                            <div class="input-group grid-span-2">
+                                <div class="input-label-cyber">🌍 PAÍS</div>
+                                <div class="cyber-selector-grupo" id="grupo-pais-azul">
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisAzul', 'ar', this)">ARG 🇦🇷</button>
+                                    <button type="button" class="btn-selector-cyber activo" onclick="seleccionarOpcionHUD('paisAzul', 'br', this)">BRA 🇧🇷</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisAzul', 'cl', this)">CHI 🇨🇱</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisAzul', 'us', this)">USA 🇺🇸</button>
+                                    <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('paisAzul', 'kr', this)">KOR 🇰🇷</button>
+                                </div>
+                            </div>
+                            
+                            <div class="input-group grid-span-2"><div class="input-label-cyber">🏅 RANK</div><input type="text" id="cfg-rank-azul" class="setup-input-cyber" value="SEED #2"></div>
                             <div class="input-group grid-span-2"><div class="input-label-cyber">🏢 CLUB</div><input type="text" id="cfg-subtexto-azul" class="setup-input-cyber" value="ROSARIO CLUB"></div>
                         </div>
                     </div>
                 </div>
-                <div class="input-group-categoria">
+                <div class="input-group-categoria" style="margin-top:20px;">
                     <div class="input-label-cyber text-center">🏆 CATEGORÍA DE COMBATE</div>
                     <input type="text" id="cfg-categoria-combate" class="setup-input-cyber cyber-input-gala text-center" value="ADULTOS MASCULINO -58 KG">
                 </div>
@@ -48,46 +232,99 @@
             <div class="setup-card">
                 <div class="setup-card-title">REGLAS Y TIEMPOS OFICIALES WT</div>
                 <div class="reglas-grid">
-                    <div class="regla-item"><div class="input-label">TIEMPO DE ROUND</div><div class="tiempo-inputs"><input type="number" id="cfg-min" class="num-mini" value="1"> <span>m</span> : <input type="number" id="cfg-seg" class="num-mini" value="30"> <span>s</span></div></div>
-                    <div class="regla-item"><div class="input-label">TIEMPO DESCANSO</div><div class="tiempo-inputs"><input type="number" id="cfg-desc-min" class="num-mini" value="1"> <span>m</span> : <input type="number" id="cfg-desc-seg" class="num-mini" value="00"> <span>s</span></div></div>
-                    <div class="regla-item"><div class="input-label">MÉDICO (KYE-SHI)</div><div class="tiempo-inputs"><input type="number" id="cfg-med-min" class="num-mini" value="1"> <span>m</span> : <input type="number" id="cfg-med-seg" class="num-mini" value="00"> <span>s</span></div></div>
-                    <div class="regla-item"><div class="input-label">SISTEMA</div><select id="cfg-sistema" class="setup-select"><option value="best3" selected>Mejor de 3 Rounds</option><option value="tradicional">Tradicional</option></select></div>
-                    <div class="regla-item"><div class="input-label">MANDOS</div><select id="cfg-jueces" class="setup-select"><option value="1_1" selected>1 Mando (Directo)</option><option value="2_2">2 Mandos (Coincidencia)</option></select></div>
-                    <div class="regla-item"><label class="toggle-container"><div class="input-label" style="flex:1;">GAM-JEOM LÍMITE</div><input type="checkbox" id="cfg-gj-act" class="toggle-checkbox" checked><div class="toggle-switch"><div class="toggle-slider"></div></div></label><div style="display: flex; gap: 8px; margin-top: 5px;"><span>Máx:</span><input type="number" id="cfg-gj-max" class="num-mini" value="5"></div></div>
-                    <div class="regla-item" style="grid-column: span 3; flex-direction: row;"><label class="toggle-container" style="flex:1;"><div class="input-label">POINT GAP (BRECHA)</div><input type="checkbox" id="cfg-pg-act" class="toggle-checkbox" checked><div class="toggle-switch"><div class="toggle-slider"></div></div></label><div style="display: flex; gap: 8px;"><span>Diferencia:</span><input type="number" id="cfg-pg-pts" class="num-mini" value="12"> <span>pts</span></div></div>
+                    <div class="regla-item">
+                        <div class="input-label">TIEMPO DE ROUND</div>
+                        <div class="tiempo-inputs">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('min', -1)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-min" value="01" onchange="validarEntradaTeclado('min', this)">
+                            <span class="separador-digital">:</span>
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('seg', -5)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-seg" value="30" onchange="validarEntradaTeclado('seg', this)">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('seg', 5)">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item">
+                        <div class="input-label">TIEMPO DESCANSO</div>
+                        <div class="tiempo-inputs">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('desc-min', -1)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-desc-min" value="01" onchange="validarEntradaTeclado('desc-min', this)">
+                            <span class="separador-digital">:</span>
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('desc-seg', -5)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-desc-seg" value="00" onchange="validarEntradaTeclado('desc-seg', this)">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('desc-seg', 5)">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item">
+                        <div class="input-label">MÉDICO (KYE-SHI)</div>
+                        <div class="tiempo-inputs">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('med-min', -1)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-med-min" value="01" onchange="validarEntradaTeclado('med-min', this)">
+                            <span class="separador-digital">:</span>
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('med-seg', -5)">-</button>
+                            <input type="number" class="num-mini-hud-editable" id="lbl-med-seg" value="00" onchange="validarEntradaTeclado('med-seg', this)">
+                            <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('med-seg', 5)">+</button>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item">
+                        <div class="input-label">SISTEMA</div>
+                        <div class="cyber-selector-grupo" id="grupo-sistema">
+                            <button type="button" class="btn-selector-cyber activo" onclick="seleccionarOpcionHUD('sistema', 'best3', this)">MEJOR DE 3</button>
+                            <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('sistema', 'tradicional', this)">ACUMULATIVO</button>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item">
+                        <div class="input-label">MANDOS</div>
+                        <div class="cyber-selector-grupo" id="grupo-jueces">
+                            <button type="button" class="btn-selector-cyber" onclick="seleccionarOpcionHUD('jueces', '1_1', this)">1 JUEZ (DIRECTO)</button>
+                            <button type="button" class="btn-selector-cyber activo" onclick="seleccionarOpcionHUD('jueces', '2_2', this)">2 JUECES (MATCH)</button>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item">
+                        <div class="input-label">GAM-JEOM LÍMITE</div>
+                        <div class="flex-toggle-box">
+                            <div class="tiempo-inputs" style="width: auto; padding: 4px 10px; margin-top:0;">
+                                <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('gj-max', -1)">-</button>
+                                <input type="number" class="num-mini-hud-editable" id="lbl-gj-max" value="5" style="width:30px; font-size:16px;" onchange="validarEntradaTeclado('gj-max', this)">
+                                <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('gj-max', 1)">+</button>
+                            </div>
+                            <label class="toggle-container" style="margin-left: 10px;">
+                                <input type="checkbox" id="cfg-gj-act" class="toggle-checkbox" checked>
+                                <div class="toggle-switch"><div class="toggle-slider"></div></div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="regla-item grid-span-completo">
+                        <div style="display:flex; flex-direction:column; gap:4px;">
+                            <div class="input-label" style="margin-bottom:0;">POINT GAP (BRECHA DE PUNTOS)</div>
+                            <span style="font-size:11px; color:#475569;">Finaliza el round automáticamente si se alcanza la diferencia reglamentaria.</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div class="tiempo-inputs" style="width: auto; padding: 4px 12px; margin-top:0;">
+                                <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('pg-pts', -1)">-</button>
+                                <input type="number" class="num-mini-hud-editable" id="lbl-pg-pts" value="12" style="width:35px; font-size:16px;" onchange="validarEntradaTeclado('pg-pts', this)">
+                                <button type="button" class="btn-ajuste-hud" onclick="cambiarValorHUD('pg-pts', 1)">+</button>
+                            </div>
+                            <label class="toggle-container">
+                                <input type="checkbox" id="cfg-pg-act" class="toggle-checkbox" checked>
+                                <div class="toggle-switch"><div class="toggle-slider"></div></div>
+                            </label>
+                        </div>
+                    </div>
                 </div>
             </div>
 
             <div id="gamepad-status" class="sin-mando" style="margin: 0 auto;">🎮 Esperando mandos...</div>
 
             <div class="setup-actions">
-                <button class="btn-secundario" onclick="abrirPantallaTest()">🎮 DIAGNÓSTICO JUECES</button>
+                <button class="btn-secundario" onclick="window.location.href='diagnostico.html'">🎮 DIAGNÓSTICO JUECES</button>
                 <button class="btn-secundario" onclick="window.open('vista-publico.html', 'SMTKD_Estadio', 'width=1280,height=720')" style="border-color: #00ddff; color: #00ddff;">📺 ABRIR PANTALLA TV</button>
                 <button class="btn-iniciar-gigante" onclick="guardarYComenzar()">▶ INICIAR COMBATE</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="pagina-test" class="modal-overlay">
-        <div class="modal-box" style="max-width:900px; width:95%; text-align:left;">
-            <div class="ps-header">
-                <button class="ps-btn-volver" onclick="cerrarPantallaTest()">←</button>
-                <div class="ps-titles"><div class="ps-title">COMPROBACIÓN DE MANDOS</div></div>
-            </div>
-            <div class="ps-diag-layout" style="margin-top:20px;">
-                <div class="ps-grid">
-                    <script>
-                        for(let i=0; i<2; i++) {
-                            document.write(`
-                            <div class="ps-slot" id="ps-slot-${i}"><div class="ps-number">${i+1}</div><div class="ps-info"><div class="ps-status" id="ps-status-${i}">Sin conexión</div>
-                            <div class="ps-controller-map"><div class="ps-triggers left"><div class="ps-btn ps-btn-top" id="btn-${i}-l2">L2 (-)</div><div class="ps-btn ps-btn-top" id="btn-${i}-l1">L1</div></div>
-                            <div class="ps-dpad"><div class="ps-btn ps-up" id="btn-${i}-up">▲</div><div class="ps-btn ps-left" id="btn-${i}-left">◀</div><div class="ps-btn ps-right" id="btn-${i}-right">▶</div><div class="ps-btn ps-down" id="btn-${i}-down">▼</div></div>
-                            <div class="ps-analogs"><div class="ps-btn ps-stick" id="stick-l-${i}">L</div><div class="ps-btn ps-stick" id="stick-r-${i}">R</div></div>
-                            <div class="ps-shapes"><div class="ps-btn ps-up" id="btn-${i}-tr">▲</div><div class="ps-btn ps-left" id="btn-${i}-sq">■</div><div class="ps-btn ps-right" id="btn-${i}-ci">●</div><div class="ps-btn ps-down" id="btn-${i}-cr">✖</div></div>
-                            <div class="ps-triggers right"><div class="ps-btn ps-btn-top" id="btn-${i}-r2">R2</div><div class="ps-btn ps-btn-top" id="btn-${i}-r1">R1</div></div></div></div></div>`);
-                        }
-                    </script>
-                </div>
             </div>
         </div>
     </div>

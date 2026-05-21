@@ -273,3 +273,20 @@
     0% { opacity: 1; margin-top: 0; transform: translateX(-50%) scale(1); }
     100% { opacity: 0; margin-top: -100px; transform: translateX(-50%) scale(1.5); }
 }
+
+/* ========================================================
+   ANIMACIONES ÉPICAS PANTALLA PÚBLICO (TV)
+   ======================================================== */
+.texto-flotante-tv {
+    position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Orbitron', sans-serif; font-weight: 900; color: #ffd600; text-shadow: 0 0 10px #000, 0 0 30px #ffd600;
+    pointer-events: none; animation: flotarArribaTV 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    z-index: 100; top: 30%; left: 50%; transform: translateX(-50%);
+}
+
+@keyframes flotarArribaTV {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.5) translateY(50px); }
+    20% { opacity: 1; transform: translateX(-50%) scale(1.2) translateY(0); }
+    80% { opacity: 1; transform: translateX(-50%) scale(1) translateY(-60px); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1.5) translateY(-120px); filter: blur(5px); }
+}
