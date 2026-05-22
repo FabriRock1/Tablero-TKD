@@ -295,3 +295,74 @@
     border-width: 5px !important;
     z-index: 50;
 }
+/* ========================================================
+   RESPONSIVIDAD AUTO-ADAPTATIVA (BRACKETS Y PANELES)
+   ======================================================== */
+
+/* Para Notebooks estándar (pantallas menores a 1400px) */
+@media screen and (max-width: 1400px) {
+    .setup-container-main { 
+        grid-template-columns: 290px 1fr !important; /* Achica el panel de registro */
+        gap: 10px !important; 
+    }
+    .cruce-match-box { width: 220px; } /* Tarjetas de combate más compactas */
+    .fila-atleta-llave { padding: 10px 15px; font-size: 12px; }
+    .btn-lanzar-match { padding: 10px; font-size: 10px; }
+    .bracket-esports-layout { gap: 40px; }
+    .bracket-columna { gap: 25px; }
+}
+
+/* Para Notebooks pequeñas o Tablets (pantallas menores a 1100px) */
+@media screen and (max-width: 1100px) {
+    .setup-container-main { 
+        grid-template-columns: 240px 1fr !important; 
+    }
+    .cruce-match-box { width: 190px; }
+    .nombre-llave { font-size: 11px; }
+    .club-atleta-llave { font-size: 9px; margin-top: 2px; }
+    .bracket-esports-layout { gap: 25px; }
+    .btn-match-accion { width: 26px; height: 26px; font-size: 10px; }
+    .acciones-match-flotantes { left: -35px; }
+}
+/* ========================================================
+   RESPONSIVIDAD AUTO-ADAPTATIVA (TV Y CONSOLA DE COMBATE)
+   ======================================================== */
+
+/* Para pantallas de tamaño notebook o proyectores que no son Full HD */
+@media screen and (max-width: 1400px) {
+    .columna-lateral { width: 140px; padding: 10px; }
+    .score-modulo { font-size: 40px; } /* Achica los números de los jueces */
+    .num-gamjeom { font-size: 55px; }
+    .puntos { font-size: 20vw; line-height: 0.8; } /* Evita que el puntaje gigante desborde */
+    .tiempo { font-size: 5.5vw; }
+    .btn-op { padding: 8px; font-size: 10px; }
+    .nombre-competidor { font-size: 4.5vw; }
+    
+    /* Achicamos la tabla de estadísticas para que no tape el fondo */
+    .stat-row { font-size: 24px; padding: 4px 8px; }
+    .stat-total { font-size: 32px; }
+    .pub-stat-row { font-size: 28px; }
+    .pub-stat-total { font-size: 36px; }
+}
+
+/* Para pantallas aún más pequeñas (Notebooks de 13 o 14 pulgadas) */
+@media screen and (max-width: 1100px) {
+    .columna-lateral { width: 110px; }
+    .bandera { height: 75px; }
+    .score-modulo { font-size: 30px; }
+    .num-gamjeom { font-size: 45px; }
+    .puntos { font-size: 18vw; }
+    .nombre-competidor { font-size: 5vw; }
+    .centro { width: 18vw; min-width: 150px; padding: 15px; }
+    .btn-control-main { padding: 10px; font-size: 11px; }
+    
+    #modal-r-ganador, #pub-modal-r-ganador { font-size: 40px; }
+}
+
+/* Evita que los puntos se estiren demasiado a lo alto si la pantalla es "cuadrada" */
+@media screen and (max-height: 800px) {
+    .puntos { font-size: min(20vw, 35vh); }
+    .centro { padding: 10px; }
+    .bando { padding: 10px; }
+}
+
