@@ -355,3 +355,32 @@ body {
     scrollbar-width: thin;
     scrollbar-color: rgba(0, 221, 255, 0.3) rgba(10, 12, 22, 0.8);
 }
+/* ========================================================
+   RESPONSIVIDAD AUTO-ADAPTATIVA (BRACKETS Y PANELES)
+   ======================================================== */
+
+/* Para Notebooks estándar (pantallas menores a 1400px) */
+@media screen and (max-width: 1400px) {
+    .setup-container-main { 
+        grid-template-columns: 290px 1fr !important; /* Achica el panel de registro */
+        gap: 10px !important; 
+    }
+    .cruce-match-box { width: 220px; } /* Tarjetas de combate más compactas */
+    .fila-atleta-llave { padding: 10px 15px; font-size: 12px; }
+    .btn-lanzar-match { padding: 10px; font-size: 10px; }
+    .bracket-esports-layout { gap: 40px; }
+    .bracket-columna { gap: 25px; }
+}
+
+/* Para Notebooks pequeñas o Tablets (pantallas menores a 1100px) */
+@media screen and (max-width: 1100px) {
+    .setup-container-main { 
+        grid-template-columns: 240px 1fr !important; 
+    }
+    .cruce-match-box { width: 190px; }
+    .nombre-llave { font-size: 11px; }
+    .club-atleta-llave { font-size: 9px; margin-top: 2px; }
+    .bracket-esports-layout { gap: 25px; }
+    .btn-match-accion { width: 26px; height: 26px; font-size: 10px; }
+    .acciones-match-flotantes { left: -35px; }
+}
