@@ -2,38 +2,164 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SMTKD - Pre-Inscripción de Atletas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SMTKD - Registro Móvil</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Arial', sans-serif; }
-        body { background-color: #050508; color: white; padding: 20px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .header { text-align: center; margin-bottom: 30px; }
-        .header h1 { font-family: 'Orbitron', sans-serif; color: #ffd600; font-size: 24px; letter-spacing: 2px; }
-        .header p { color: #888; font-size: 14px; margin-top: 5px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        body { 
+            background-color: #030408; 
+            color: white; 
+            padding: 15px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .header { text-align: center; margin-bottom: 20px; width: 100%; }
+        .header h1 { color: #ffd600; font-size: 20px; letter-spacing: 2px; text-transform: uppercase; }
+        .header p { color: #555; font-size: 11px; margin-top: 5px; letter-spacing: 1px; }
         
-        .container { width: 100%; max-width: 500px; background: #0e0e16; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .container { 
+            width: 100%; 
+            max-width: 400px; /* Ancho ideal para móviles */
+            background: #0a0c14; 
+            border: 1px solid rgba(255,255,255,0.05); 
+            border-radius: 16px; 
+            padding: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); 
+        }
         
         .input-group { margin-bottom: 15px; }
-        .input-label { font-family: 'Orbitron', sans-serif; font-size: 11px; color: #00ddff; margin-bottom: 5px; display: block; }
-        input, select { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 8px; font-weight: bold; font-size: 14px; outline: none; }
-        input:focus, select:focus { border-color: #00ddff; box-shadow: 0 0 10px rgba(0,221,255,0.2); }
+        .input-label { font-size: 10px; color: #00ddff; margin-bottom: 6px; display: block; letter-spacing: 1px; }
         
-        .btn-agregar { width: 100%; background: #00ddff; color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; padding: 15px; border-radius: 8px; cursor: pointer; margin-top: 10px; font-size: 14px; transition: 0.3s; }
-        .btn-agregar:hover { background: #fff; box-shadow: 0 0 15px #00ddff; }
+        input, select { 
+            width: 100%; 
+            background: #000; 
+            border: 1px solid #222; 
+            color: #fff; 
+            padding: 14px; /* Más grande para fácil toque */
+            border-radius: 10px; 
+            font-size: 16px; /* Evita el zoom automático de iOS en inputs */
+            outline: none; 
+        }
+        input:focus, select:focus { border-color: #00ddff; }
         
-        .lista-alumnos { margin-top: 30px; border-top: 1px dashed rgba(255,255,255,0.2); padding-top: 20px; }
-        .lista-titulo { font-family: 'Orbitron', sans-serif; font-size: 14px; color: #ffd600; margin-bottom: 15px; text-align: center; }
-        .alumno-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 6px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid #ffd600; }
-        .alumno-info { font-size: 12px; line-height: 1.4; }
-        .alumno-nombre { font-weight: bold; color: #fff; font-size: 14px; }
-        .btn-eliminar { background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 12px; }
+        .btn-agregar { 
+            width: 100%; 
+            background: #00ddff; 
+            color: #000; 
+            border: none; 
+            font-weight: 900; 
+            padding: 18px; 
+            border-radius: 10px; 
+            cursor: pointer; 
+            font-size: 14px; 
+            text-transform: uppercase;
+        }
         
-        .btn-descargar { width: 100%; background: #ffd600; color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; padding: 15px; border-radius: 8px; cursor: pointer; margin-top: 20px; font-size: 16px; display: none; transition: 0.3s; }
-        .btn-descargar:hover { background: #fff; box-shadow: 0 0 20px #ffd600; }
+        .lista-alumnos { margin-top: 25px; border-top: 1px dashed #222; padding-top: 20px; }
+        .lista-titulo { font-size: 12px; color: #ffd600; margin-bottom: 15px; text-align: center; letter-spacing: 2px; }
         
-        /* Animación para el aviso de éxito */
-        .aviso { display: none; text-align: center; color: #00e676; font-family: 'Orbitron'; font-weight: bold; margin-top: 15px; font-size: 12px; }
+        .alumno-item { 
+            background: #0e0e16; 
+            padding: 12px; 
+            border-radius: 8px; 
+            margin-bottom: 10px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-left: 3px solid #ffd600; 
+        }
+        .alumno-nombre { font-weight: bold; font-size: 14px; }
+        .alumno-info { font-size: 10px; color: #aaa; }
+        
+        .btn-eliminar { background: transparent; border: 1px solid #ff4444; color: #ff4444; padding: 8px 12px; border-radius: 6px; }
+        .btn-descargar { 
+            width: 100%; background: #ffd600; color: #000; border: none; 
+            font-weight: 900; padding: 18px; border-radius: 10px; margin-top: 20px; 
+            font-size: 14px; display: none; text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h1>SMTKD REGISTRO</h1>
+        <p>MOBILE PORTAL V.1</p>
+    </div>
+
+    <div class="container">
+        <div class="input-group">
+            <label class="input-label">ATLETA</label>
+            <input type="text" id="reg-nombre" placeholder="Nombre y Apellido">
+        </div>
+        <div class="input-group">
+            <label class="input-label">ACADEMIA</label>
+            <input type="text" id="reg-club" placeholder="Nombre de la escuela">
+        </div>
+        <div class="input-group">
+            <label class="input-label">CINTURÓN</label>
+            <select id="reg-cinturon">
+                <option value="Blanco/Amarillo">Blanco / Amarillo</option>
+                <option value="Verde/Azul">Verde / Azul</option>
+                <option value="Rojo">Rojo</option>
+                <option value="Negro" selected>Negro (Danes)</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label class="input-label">PESO</label>
+            <select id="reg-peso">
+                <option value="MASCULINO -58 KG">MASCULINO -58 KG</option>
+                <option value="MASCULINO -68 KG">MASCULINO -68 KG</option>
+                <option value="FEMENINO -49 KG">FEMENINO -49 KG</option>
+                <option value="FEMENINO -57 KG">FEMENINO -57 KG</option>
+            </select>
+        </div>
+        
+        <button class="btn-agregar" onclick="agregarAlumno()">+ REGISTRAR</button>
+
+        <div class="lista-alumnos" id="zona-lista" style="display: none;">
+            <div class="lista-titulo">INSCRIPTOS (<span id="contador">0</span>)</div>
+            <div id="contenedor-alumnos"></div>
+            <button class="btn-descargar" id="btn-exportar" onclick="descargarJSON()">📥 EXPORTAR JSON</button>
+        </div>
+    </div>
+
+    <script>
+        let alumnos = [];
+        function agregarAlumno() {
+            let nom = document.getElementById('reg-nombre').value.trim().toUpperCase();
+            let clb = document.getElementById('reg-club').value.trim().toUpperCase();
+            if(!nom || !clb) return alert("Completa los campos");
+            alumnos.push({ nombre: nom, club: clb, cinturon: document.getElementById('reg-cinturon').value, peso: document.getElementById('reg-peso').value });
+            document.getElementById('reg-nombre').value = "";
+            actualizarLista();
+        }
+        function actualizarLista() {
+            let cont = document.getElementById('contenedor-alumnos');
+            cont.innerHTML = "";
+            document.getElementById('contador').innerText = alumnos.length;
+            if(alumnos.length > 0) {
+                document.getElementById('zona-lista').style.display = "block";
+                document.getElementById('btn-exportar').style.display = "block";
+                alumnos.forEach((al, i) => {
+                    cont.innerHTML += `<div class="alumno-item"><div class="alumno-nombre">${al.nombre}<br><span class="alumno-info">${al.cinturon} | ${al.peso}</span></div><button class="btn-eliminar" onclick="alumnos.splice(${i},1); actualizarLista()">X</button></div>`;
+                });
+            }
+        }
+        function descargarJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(alumnos));
+            const a = document.createElement('a');
+            a.setAttribute("href", dataStr);
+            a.setAttribute("download", "Inscripcion.json");
+            a.click();
+        }
+    </script>
+</body>
+</html>
     </style>
 </head>
 <body>
