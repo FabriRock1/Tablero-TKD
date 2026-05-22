@@ -5,7 +5,6 @@
 const canalTransmision = new BroadcastChannel('smtkd_transmision');
 let r = JSON.parse(sessionStorage.getItem('smtkd_active_match_rules'));
 
-// BLINDAJE: Si 'r' no existe, cargamos los valores por defecto
 let configPelea = (r && Object.keys(r).length > 0) ? r : { tiempoRound: 90, tiempoDescanso: 60, tiempoMedico: 60, sistema: 'best3', mandosActivos: 1, coincidenciasRequeridas: 1, gamjeomLimiteActivo: true, gamjeomMax: 5, pointGapActivo: true, pointGapPts: 12 };
 
 let combate = { 
@@ -139,7 +138,6 @@ window.cambiarFalta = function(bando, cant) {
     else { if(inf.gamjeoms>0) { inf.gamjeoms--; op.puntos=Math.max(0, op.puntos-1); actualizarPantallaCombate(); } }
 };
 
-// ================= CONTROLES DE TIEMPO =================
 window.controlarTiempo = function() {
     if(ganadorDelCombate) return;
     if(fase === 'descanso') return terminarDescanso();
@@ -224,7 +222,6 @@ function terminarDescanso() {
     actualizarPantallaCombate(); 
 }
 
-// ================= LÓGICA DE FIN DE ROUND Y AUTO-AVANCE =================
 function evaluarSuperioridad() {
     let r = combate.rojo; let a = combate.azul;
     if(r.puntos !== a.puntos) return procesarFinRound(r.puntos>a.puntos?'rojo':'azul', "Puntos Netos.");
@@ -259,7 +256,7 @@ function procesarFinRound(ganador, motivo) {
     }
 }
 
-// --> CORRECCIÓN: ACÁ SE GUARDA QUIÉN GANÓ CONSOLIDADO DESDE LAS REGLAS ACTIVAS <--
+// ACÁ SE GUARDA QUIÉN GANÓ UTILIZANDO LAS REGLAS ACTIVAS DE LA PELEA
 function guardarProgresoLlave(ganador) {
     if(r && r.keyLlave && r.matchId) {
         let prog = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
@@ -298,7 +295,7 @@ window.avanzarSiguientePaso = function() {
     canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
     
     if(ganadorDelCombate) { 
-        window.location.href = 'torneo.html'; 
+        window.location.href = 'torneo.html'; // Devuelve a la pantalla de llaves
     }
     else {
         roundActual++; if(configPelea.sistema === 'best3') { ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); }
@@ -310,7 +307,6 @@ window.avanzarSiguientePaso = function() {
 
 window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.display="grid"; document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
 
-// ================= RECEPTOR DE TV Y CELULARES =================
 canalTransmision.onmessage = function(e) {
     let d = e.data; 
     if (d.comandoAccion === "VOTO_MOBILE") { if(document.getElementById('cronometro')) { window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez); } return; }

@@ -2,22 +2,18 @@
    ESTILOS DE LA LLAVE DE TORNEO (BRACKET E-SPORTS)
    ======================================================== */
 
-/* =========================================================================
-   1. LAYOUT HORIZONTAL (EL ÁRBOL) - SOLO REEMPLAZÁ ESTA PARTE
-   ========================================================================= */
-
 .torneo-bracket-container {
     width: 100%;
-    overflow-x: auto; /* Fundamental para mover el árbol de lado a lado */
+    overflow-x: auto; 
     padding-bottom: 20px;
 }
 
 .bracket-esports-layout {
     display: flex;
-    flex-direction: row; /* Esto pone las columnas una al lado de la otra */
-    align-items: center; /* Centra todo el árbol verticalmente */
-    gap: 60px; /* Distancia horizontal entre Cuartos, Semis, Final */
-    width: max-content; /* Evita que las tarjetas se aplasten */
+    flex-direction: row; 
+    align-items: center; 
+    gap: 60px; 
+    width: max-content; 
     padding: 40px 20px 20px 20px;
 }
 
@@ -25,7 +21,7 @@
     display: flex;
     flex-direction: column;
     justify-content: space-around;
-    gap: 40px; /* Distancia vertical entre una tarjeta y la de abajo */
+    gap: 40px; 
     position: relative;
 }
 
@@ -41,9 +37,9 @@
     border-left: 3px solid #ffd600;
     border-radius: 4px;
     position: absolute;
-    top: -45px; /* Lo ancla arriba de la columna */
+    top: -45px; 
     left: 0;
-    white-space: nowrap; /* Evita que el título se parta en dos líneas */
+    white-space: nowrap; 
 }
 
 /* CAJA DE COMBATE (EFECTO GLASSMORPHISM) */
@@ -115,7 +111,7 @@
 .nombre-llave { display: block; color: #fff; letter-spacing: 1px; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
 .club-atleta-llave { display: block; font-size: 10px; color: #888; font-family: 'Arial'; font-weight: bold; margin-top: 4px; text-transform: uppercase; }
 
-/* BOTÓN "FIGHT MATCH" (ESTILO CHUNKY 3D GAMER) */
+/* BOTÓN "FIGHT MATCH" */
 .btn-lanzar-match {
     background: linear-gradient(180deg, #ffe600 0%, #ff9100 100%);
     color: black;
@@ -148,61 +144,16 @@
     cursor: not-allowed;
 }
 
-/* LÍNEAS CONECTORAS DEL ÁRBOL (CABLES NEÓN) */
+/* LÍNEAS CONECTORAS DEL ÁRBOL */
 .nodo-match { position: relative; }
+.nodo-semifinal::after { content: ''; position: absolute; right: -30px; width: 30px; border-top: 3px solid #00ddff; box-shadow: 0 -2px 10px rgba(0,221,255,0.4); z-index: -1; }
+.nodo-semifinal-top::after { top: 50%; height: calc(50% + 25px); border-right: 3px solid #00ddff; border-radius: 0 8px 0 0; box-shadow: inset -2px 2px 10px rgba(0,221,255,0.2), 2px -2px 10px rgba(0,221,255,0.2); }
+.nodo-semifinal-bottom::after { bottom: 50%; height: calc(50% + 25px); border-right: 3px solid #00ddff; border-bottom: 3px solid #00ddff; border-top: none; border-radius: 0 0 8px 0; box-shadow: inset -2px -2px 10px rgba(0,221,255,0.2), 2px 2px 10px rgba(0,221,255,0.2); }
+.nodo-final::before { content: ''; position: absolute; left: -30px; top: 50%; width: 30px; border-top: 3px solid #00ddff; box-shadow: 0 -2px 10px rgba(0,221,255,0.4); z-index: -1; }
 
-/* Línea que sale hacia la derecha */
-.nodo-semifinal::after {
-    content: '';
-    position: absolute;
-    right: -30px;
-    width: 30px;
-    border-top: 3px solid #00ddff;
-    box-shadow: 0 -2px 10px rgba(0,221,255,0.4);
-    z-index: -1;
-}
-
-/* Conector Semifinal Arriba (Sube hacia el centro) */
-.nodo-semifinal-top::after {
-    top: 50%;
-    height: calc(50% + 25px);
-    border-right: 3px solid #00ddff;
-    border-radius: 0 8px 0 0;
-    box-shadow: inset -2px 2px 10px rgba(0,221,255,0.2), 2px -2px 10px rgba(0,221,255,0.2);
-}
-
-/* Conector Semifinal Abajo (Baja hacia el centro) */
-.nodo-semifinal-bottom::after {
-    bottom: 50%;
-    height: calc(50% + 25px);
-    border-right: 3px solid #00ddff;
-    border-bottom: 3px solid #00ddff;
-    border-top: none;
-    border-radius: 0 0 8px 0;
-    box-shadow: inset -2px -2px 10px rgba(0,221,255,0.2), 2px 2px 10px rgba(0,221,255,0.2);
-}
-
-/* Línea que entra a la Final */
-.nodo-final::before {
-    content: '';
-    position: absolute;
-    left: -30px;
-    top: 50%;
-    width: 30px;
-    border-top: 3px solid #00ddff;
-    box-shadow: 0 -2px 10px rgba(0,221,255,0.4);
-    z-index: -1;
-}
-
-/* BOTONES FLOTANTES DE EDICIÓN EN LA LLAVE */
-.acciones-match-flotantes {
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    display: flex;
-    gap: 8px;
-    z-index: 10;
-}
+/* ========================================================
+   BOTONES DE EDICIÓN FLOTANTES (ELIMINAR/UNDO FUERA DE LA CAJA)
+   ======================================================== */
 .btn-match-accion {
     background: #1a1c29;
     border: 2px solid #333;
@@ -218,11 +169,15 @@
     transition: 0.2s ease;
     box-shadow: 0 4px 10px rgba(0,0,0,0.5);
 }
-.btn-match-accion.edit:hover { background: #00ddff; border-color: #00ddff; color: #000; box-shadow: 0 0 15px rgba(0,221,255,0.4); }
+
+.btn-match-accion.delete { border-color: rgba(255, 51, 68, 0.4); color: #ff3344; }
 .btn-match-accion.delete:hover { background: #ff3344; border-color: #ff3344; color: #fff; box-shadow: 0 0 15px rgba(255,51,68,0.4); }
 
+.btn-match-accion.undo { border-color: rgba(0, 221, 255, 0.4); color: #00ddff; }
+.btn-match-accion.undo:hover { background: #00ddff; color: #000; box-shadow: 0 0 15px rgba(0,221,255,0.4); }
+
 /* ========================================================
-   CONTROLES DE MOVIMIENTO (FLECHAS) Y DESHACER
+   CONTROLES DE MOVIMIENTO (FLECHAS ARRIBA/ABAJO)
    ======================================================== */
 .acciones-mover-cyber {
     position: absolute;
@@ -246,15 +201,4 @@
 .acciones-mover-cyber i:hover {
     color: #ffd600;
     background: rgba(255,214,0,0.2);
-}
-
-.btn-match-accion.undo {
-    background: #1a1c29;
-    border-color: #00ddff;
-    color: #00ddff;
-}
-.btn-match-accion.undo:hover {
-    background: #00ddff;
-    color: #000;
-    box-shadow: 0 0 15px rgba(0,221,255,0.4);
 }

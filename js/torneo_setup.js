@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById('cfg-nombre-azul')) document.getElementById('cfg-nombre-azul').value = precarga.azul || "";
             if(document.getElementById('cfg-subtexto-azul')) document.getElementById('cfg-subtexto-azul').value = precarga.clubAzul || "";
             if(document.getElementById('cfg-categoria-combate')) document.getElementById('cfg-categoria-combate').value = precarga.categoria || "COMBATE OFICIAL WT";
-            sessionStorage.removeItem('smtkd_preload_match'); 
+            // NO limpiamos la memoria acá, para que el enlace a la pelea se mantenga
         }
         actualizarTodosLosDisplaysHUD();
         requestAnimationFrame(loopDeteccionFisica);
@@ -113,6 +113,16 @@ window.guardarYComenzar = function() {
     reglas.pointGapActivo = document.getElementById('cfg-pg-act')?.checked ?? true;
     reglas.pointGapPts = valoresHUD['pg-pts'];
 
+    // Pasamos el enlace de la llave al combate y vaciamos la precarga
+    const precarga = JSON.parse(sessionStorage.getItem('smtkd_preload_match'));
+    if(precarga) {
+        reglas.keyLlave = precarga.keyLlave;
+        reglas.matchId = precarga.matchId;
+        reglas.idRojo = precarga.idRojo;
+        reglas.idAzul = precarga.idAzul;
+        sessionStorage.removeItem('smtkd_preload_match'); 
+    }
+
     sessionStorage.setItem('smtkd_active_match_rules', JSON.stringify(reglas));
     window.location.href = 'combate.html';
 };
@@ -186,7 +196,6 @@ window.renderizarBarraCategorias = function() {
 
     combinaciones.forEach(c => {
         let isActiva = (c.cinturon === fCin && c.peso === fPes) ? 'activa' : '';
-        // Acortamos el texto para que la barra quede prolija y ocupen poco espacio
         let cinCorto = c.cinturon.split('(')[0].trim(); 
         let pesoCorto = c.peso.replace('MASCULINO', 'M').replace('FEMENINO', 'F').replace('ADULTOS', 'ADUL').replace('INFANTIL', 'INF').replace('JUVENIL', 'JUV');
         
@@ -201,6 +210,7 @@ window.cambiarCategoriaRapida = function(cinturon, peso) {
     document.getElementById('filtro-peso').value = peso;
     renderizarLlaveAutomatica();
 };
+
 
 // ================= MOTOR DE ÁRBOL Y AUTO-AVANCE =================
 window.renderizarLlaveAutomatica = function() {
@@ -219,34 +229,38 @@ window.renderizarLlaveAutomatica = function() {
         renderizarBarraCategorias(); return; 
     }
     
-    // Obtenemos el progreso guardado
     let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
     if(!progreso[keyLlave]) progreso[keyLlave] = {};
 
-    // Lógica de árbol: 
-    // Creamos una estructura de rondas donde la ronda 0 son los atletas originales
     let rondasData = [atletasLlave];
     let numRondas = Math.ceil(Math.log2(atletasLlave.length));
     
-    // Llenar las siguientes rondas con los ganadores de la anterior
+    // 1. Proyectar las rondas dinámicamente sin guardar los BYE en la base de datos
     for(let r = 0; r < numRondas; r++) {
         let prevRonda = rondasData[r];
         let nextRonda = [];
         for(let m = 0; m < prevRonda.length / 2; m++) {
             let matchId = `r${r}_m${m}`;
-            let ganadorId = progreso[keyLlave][matchId];
+            let ganadorId = progreso[keyLlave][matchId]; // Buscamos si alguien ganó peleando
             
-            // Si ya hay un ganador, lo buscamos en la base; si no, dejamos null
+            // Si nadie ganó peleando, nos fijamos si alguien avanza por BYE temporal
+            if (!ganadorId) {
+                let rj = prevRonda[m*2];
+                let az = prevRonda[m*2+1];
+                if (rj && !az) ganadorId = rj.id;
+                if (!rj && az) ganadorId = az.id;
+            }
+            
             let ganadorObj = ganadorId ? poolCompetidores.find(a => a.id === ganadorId) : null;
             nextRonda.push(ganadorObj || null);
         }
         rondasData.push(nextRonda);
     }
 
-    // Renderizado visual
     let html = `<div class="torneo-bracket-container"><div class="bracket-esports-layout">`;
     let nombresRondas = ["FINAL", "SEMIFINALES", "CUARTOS DE FINAL", "OCTAVOS DE FINAL"];
     
+    // 2. Dibujar las tarjetas
     for(let r = 0; r < rondasData.length - 1; r++) {
         html += `<div class="bracket-columna">
                  <div class="bracket-titulo-ronda">${nombresRondas[nombresRondas.length - (r + 1)] || "RONDA"}</div>`;
@@ -255,40 +269,51 @@ window.renderizarLlaveAutomatica = function() {
             let rj = rondasData[r][m*2];
             let az = rondasData[r][m*2+1];
             let matchId = `r${r}_m${m}`;
-            let idGanador = progreso[keyLlave][matchId];
-
-            // Si uno es BYE, avanza el otro automáticamente
-            if(rj && !az && !idGanador) { idGanador = rj.id; progreso[keyLlave][matchId] = rj.id; }
-            if(!rj && az && !idGanador) { idGanador = az.id; progreso[keyLlave][matchId] = az.id; }
-
-            let idR = rj ? rj.nombre : 'BYE';
-            let idA = az ? az.nombre : 'BYE';
             
-            // Botón desactivado si ya hay ganador
-            let disBtn = (idGanador || !rj || !az) ? 'disabled' : '';
-            
-            // CONTROLES DE MOVIMIENTO (Solo aparecen en la primera ronda y si no hay ganador)
-            let controlesRj = (r === 0 && rj && !idGanador) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${rj.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${rj.id}', 1)"></i></div>` : '';
-            let controlesAz = (r === 0 && az && !idGanador) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${az.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${az.id}', 1)"></i></div>` : '';
+            // Separamos al ganador REAL (que peleó) del ganador por BYE
+            let idGanadorReal = progreso[keyLlave][matchId]; 
+            let idGanador = idGanadorReal;
+            let esBye = false;
 
-            // BOTÓN DE DESHACER (Solo aparece si el match ya fue ganado)
-            let btnDeshacer = (idGanador && rj && az) ? `<button class="btn-match-accion undo" style="position: absolute; top: 10px; left: 10px; z-index: 20;" onclick="deshacerResultadoMatch('${keyLlave}', '${matchId}')" title="Deshacer Resultado"><i class="fa-solid fa-rotate-left"></i></button>` : '';
+            if (!idGanadorReal) {
+                if (rj && !az) { idGanador = rj.id; esBye = true; }
+                if (!rj && az) { idGanador = az.id; esBye = true; }
+            }
+
+            let idR = rj ? rj.nombre : 'BYE / ESPERA';
+            let idA = az ? az.nombre : 'BYE / ESPERA';
+            
+            // Desactivamos el botón si ya está peleado o si falta algún atleta
+            let disBtn = (idGanadorReal || !rj || !az) ? 'disabled' : '';
+            
+            let textoBtn = 'FIGHT MATCH';
+            if (idGanadorReal) textoBtn = 'COMBATE CERRADO';
+            else if (esBye) textoBtn = 'AVANZA LIBRE (BYE)'; // Nuevo aviso claro para el operador
+
+            // Permitimos mover o eliminar SOLO si el combate NO se peleó todavía
+            let controlesRj = (r === 0 && rj && !idGanadorReal) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${rj.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${rj.id}', 1)"></i></div>` : '';
+            let controlesAz = (r === 0 && az && !idGanadorReal) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${az.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${az.id}', 1)"></i></div>` : '';
+
+            let btnDeshacer = (idGanadorReal && rj && az) ? `<button class="btn-match-accion undo" style="position: absolute; top: -15px; left: -15px; z-index: 20;" onclick="deshacerResultadoMatch('${keyLlave}', '${matchId}')" title="Deshacer Resultado"><i class="fa-solid fa-rotate-left"></i></button>` : '';
 
             html += `
             <div class="nodo-match">
                 <div class="cruce-match-box">
                     ${btnDeshacer}
-                    <button class="btn-match-accion delete" style="position: absolute; top: 10px; right: 10px; z-index: 20;" onclick="eliminarMatch('${rj?.id||'null'}', '${az?.id||'null'}')" title="Eliminar Atletas"><i class="fa-solid fa-times"></i></button>
-                    <div class="fila-atleta-llave b-rojo ${!rj ? 'atleta-vacante':''}" style="padding-right: 35px;">
+                    <button class="btn-match-accion delete" style="position: absolute; top: -15px; right: -15px; z-index: 20;" onclick="eliminarMatch('${rj?.id||'null'}', '${az?.id||'null'}')" title="Eliminar Atletas"><i class="fa-solid fa-times"></i></button>
+                    
+                    <div class="fila-atleta-llave b-rojo ${!rj ? 'atleta-vacante':''}" style="padding-right: 40px;">
                         <span class="nombre-llave">${idR}</span>
                         ${controlesRj}
                     </div>
-                    <div class="fila-atleta-llave b-azul ${!az ? 'atleta-vacante':''}" style="padding-right: 35px;">
+                    
+                    <div class="fila-atleta-llave b-azul ${!az ? 'atleta-vacante':''}" style="padding-right: 40px;">
                         <span class="nombre-llave">${idA}</span>
                         ${controlesAz}
                     </div>
+                    
                     <button class="btn-lanzar-match" onclick="lanzarMatchSetup('${rj?.id||'null'}', '${az?.id||'null'}', '${keyLlave}', '${matchId}')" ${disBtn}>
-                        ${idGanador ? 'COMBATE CERRADO' : 'FIGHT MATCH'}
+                        ${textoBtn}
                     </button>
                 </div>
             </div>`;
@@ -298,11 +323,9 @@ window.renderizarLlaveAutomatica = function() {
     
     html += `</div></div>`;
     box.innerHTML = html;
-    localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
     renderizarBarraCategorias();
-};  
+}; 
 
-// ================= SISTEMA DE REORDENAMIENTO DE LLAVES (FLECHAS) =================
 window.moverAtleta = function(idAtleta, direccion) {
     let fCin = document.getElementById('filtro-cinturon').value;
     let fPes = document.getElementById('filtro-peso').value;
@@ -347,7 +370,7 @@ window.lanzarMatchSetup = function(idR, idA, keyLlave, matchId) {
     window.location.href = 'setup.html';
 };
 
-// ================= SISTEMA CUSTOM DE MODALES DE EDICIÓN / BORRADO =================
+// ================= MODALES DE EDICIÓN Y BORRADO =================
 
 window.borrarBaseCompleta = function() { document.getElementById('modal-confirm-delete').classList.add('activa'); };
 window.cerrarModalBorrado = function() { document.getElementById('modal-confirm-delete').classList.remove('activa'); };
@@ -388,7 +411,6 @@ window.ejecutarBorradoMatch = function() {
     cerrarModalBorrarMatch();
 };
 
-// ================= CONTROLES DE RESETEO Y DESHACER =================
 window.deshacerResultadoMatch = function(keyLlave, matchId) {
     if(confirm("¿Deshacer el resultado de este combate?")) {
         let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
