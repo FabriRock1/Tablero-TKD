@@ -105,27 +105,29 @@
     </div>
 
     <div class="modal-overlay" id="modal-round">
-        <div class="modal-box" style="max-width: 900px; width: 95%;">
+        <div class="modal-box" style="max-width: 750px; width: 95%;">
             <div class="modal-titulo" id="modal-r-titulo">ROUND TERMINADO</div>
-            <div id="modal-r-ganador" style="font-size: 30px; font-weight: 900; margin: 10px 0;">GANADOR</div>
+            <div id="modal-r-ganador">GANADOR</div>
             <div class="modal-criterio" id="modal-r-criterio">Criterio.</div>
             
             <div class="tabla-estadisticas" id="contenedor-estadisticas">
                 <div class="stat-header"><div>HONG</div><div>ESTADÍSTICAS</div><div>CHONG</div></div>
-                <div class="stat-row stat-total"><div class="stat-r-val" id="st-pt-r">0</div><div>TOTAL</div><div class="stat-a-val" id="st-pt-a">0</div></div>
-                <div class="stat-row"><div class="stat-r-val" id="st-pu-r">0</div><div class="stat-icon-wrapper"><span class="stat-icon icon-punio"></span></div><div class="stat-a-val" id="st-pu-a">0</div></div>
-                <div class="stat-row"><div class="stat-r-val" id="st-pe-r">0</div><div class="stat-icon-wrapper"><span class="stat-icon icon-peto"></span></div><div class="stat-a-val" id="st-pe-a">0</div></div>
-                <div class="stat-row"><div class="stat-r-val" id="st-ca-r">0</div><div class="stat-icon-wrapper"><span class="stat-icon icon-casco"></span></div><div class="stat-a-val" id="st-ca-a">0</div></div>
-                <div class="stat-row"><div class="stat-r-val" id="st-gj-r">0</div><div>FALTAS</div><div class="stat-a-val" id="st-gj-a">0</div></div>
+                <div class="stat-row stat-total"><div class="stat-r-val" id="st-pt-r">0</div><div>PUNTOS NETOS</div><div class="stat-a-val" id="st-pt-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-pu-r">0</div><div class="stat-icon-wrapper"><span class="tkd-icon icon-punio"></span></div><div class="stat-a-val" id="st-pu-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-pe-r">0</div><div class="stat-icon-wrapper"><span class="tkd-icon icon-peto"></span></div><div class="stat-a-val" id="st-pe-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-pg-r">0</div><div class="stat-icon-wrapper"><span class="tkd-icon icon-petogiro"></span></div><div class="stat-a-val" id="st-pg-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-ca-r">0</div><div class="stat-icon-wrapper"><span class="tkd-icon icon-casco"></span></div><div class="stat-a-val" id="st-ca-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-cg-r">0</div><div class="stat-icon-wrapper"><span class="tkd-icon icon-cascogiro"></span></div><div class="stat-a-val" id="st-cg-a">0</div></div>
+                <div class="stat-row"><div class="stat-r-val" id="st-gj-r">0</div><div>FALTAS RECIBIDAS</div><div class="stat-a-val" id="st-gj-a">0</div></div>
             </div>
-
             <div id="contenedor-voto-manual" style="display: none; margin: 20px 0;">
-                <div class="fila-jueces-voto">
-                    <button class="btn-voto-rojo" onclick="asignarGanadorManual('rojo')">SUPERIORIDAD HONG</button>
-                    <button class="btn-voto-azul" onclick="asignarGanadorManual('azul')">SUPERIORIDAD CHONG</button>
+                <div style="display: flex; gap: 15px; width: 100%;">
+                    <button class="btn-voto-rojo" onclick="asignarGanadorManual('rojo')">DECLARAR VICTORIA HONG</button>
+                    <button class="btn-voto-azul" onclick="asignarGanadorManual('azul')">DECLARAR VICTORIA CHONG</button>
                 </div>
             </div>
-            <button id="btn-modal-accion" class="btn-iniciar-gigante" onclick="avanzarSiguientePaso()" style="width: 100%; margin-top: 20px;">AVANZAR / CONTINUAR</button>
+            
+            <button id="btn-modal-accion" class="btn-iniciar-gigante" onclick="avanzarSiguientePaso()" style="width: 100%; margin-top: 10px;">AVANZAR / CONTINUAR</button>
         </div>
     </div>
 

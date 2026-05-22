@@ -23,16 +23,18 @@
     border-radius: 20px; 
     position: relative; 
     box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+    transition: all 0.3s ease;
 }
 
-.rojo { 
-    /* Gradiente rojo profundo clásico */
+.bando.rojo { 
+    --glow-color: #ff3344;
     background: linear-gradient(135deg, #a7131f 0%, #5c070c 100%);
     border: 2px solid rgba(255, 51, 68, 0.5); 
     box-shadow: inset 0 0 60px rgba(0,0,0,0.5), 0 20px 50px rgba(0,0,0,0.8); 
 }
-.azul { 
-    /* Gradiente azul profundo clásico */
+
+.bando.azul { 
+    --glow-color: #00ddff;
     background: linear-gradient(135deg, #0b3c75 0%, #051d3b 100%);
     border: 2px solid rgba(0, 221, 255, 0.5); 
     box-shadow: inset 0 0 60px rgba(0,0,0,0.5), 0 20px 50px rgba(0,0,0,0.8); 
@@ -49,7 +51,7 @@
 }
 
 /* ========================================================
-   2. TEXTOS Y NÚMEROS NEÓN (APILADO AUTOMÁTICO)
+   2. TEXTOS Y NÚMEROS NEÓN
    ======================================================== */
 .nombre-competidor { 
     font-family: 'Teko', sans-serif; 
@@ -80,12 +82,12 @@
     background: rgba(0,0,0,0.4); 
     padding: 4px 15px; 
     border-radius: 6px; 
-    margin-bottom: 2vh; /* Da un respiro antes de que empiece el número */
+    margin-bottom: 2vh;
 }
 
 .puntos { 
     font-family: 'Teko', sans-serif; 
-    font-size: 23vw; /* Ajustado para que encaje perfecto */
+    font-size: 23vw; 
     font-weight: 900; 
     line-height: 0.75; 
     margin-top: 0; 
@@ -140,10 +142,9 @@
 .modulo-lateral.parpadeo-voto { background: rgba(255, 214, 0, 0.2); border-color: #ffd600; }
 .modulo-lateral.parpadeo-voto .score-modulo { color: #ffd600; text-shadow: 0 0 15px #ffd600; }
 
-/* Rondas Ganadas (Leds) */
-.rounds-ganados-container { display: flex; gap: 15px; position: absolute; bottom: 20px; }
-.led-round { width: 50px; height: 14px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.8); box-shadow: inset 0 2px 5px rgba(0,0,0,1); }
-.led-round.activo { background: #ffd600; box-shadow: 0 0 20px #ffd600; border-color: #fff; }
+.rounds-ganados-container { display: flex; gap: 15px; position: relative; margin-top: 20px; margin-bottom: 10px; }
+.led-round { width: 50px; height: 14px; border-radius: 6px; border: 2px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.8); box-shadow: inset 0 2px 5px rgba(0,0,0,1); transition: 0.3s ease; }
+.led-round.activo { background: #00e676; box-shadow: 0 0 25px #00e676; border-color: #fff; }
 
 /* ========================================================
    5. CONSOLA CENTRAL NEÓN
@@ -173,53 +174,50 @@
 .reloj-nucleo { margin: 20px 0; }
 .tiempo { font-family: 'Impact', sans-serif; font-size: 6vw; color: #ffd600; text-shadow: 0 5px 30px rgba(255, 214, 0, 0.5); line-height: 1; }
 
-/* Controles Chunky del Centro */
+/* Controles Centro */
 .controles-centro-gamer { display: flex; flex-direction: column; gap: 12px; width: 100%; }
-
-.btn-control-main {
-    border: none;
-    border-radius: 12px;
-    font-family: 'Orbitron';
-    font-weight: 900;
-    font-size: 13px;
-    padding: 16px;
-    color: #fff;
-    cursor: pointer;
-    transition: 0.1s ease;
-    letter-spacing: 1px;
-}
+.btn-control-main { border: none; border-radius: 12px; font-family: 'Orbitron'; font-weight: 900; font-size: 13px; padding: 16px; color: #fff; cursor: pointer; transition: 0.1s ease; letter-spacing: 1px; }
 .btn-play { background: #00b359; border-bottom: 5px solid #006633; }
 .btn-play:active { transform: translateY(4px); border-bottom-width: 1px; }
-
 .btn-kyeshi { background: #b71c1c; border-bottom: 5px solid #6b1010; }
 .btn-kyeshi:active { transform: translateY(4px); border-bottom-width: 1px; }
-
 .fila-botones-tiempo { display: flex; gap: 10px; width: 100%; }
 .btn-sec-centro { flex: 1; background: #242942; border: none; border-bottom: 4px solid #131625; color: #aaa; font-family: 'Orbitron'; font-weight: bold; font-size: 10px; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.1s ease;}
 .btn-sec-centro:active { transform: translateY(3px); border-bottom-width: 1px; }
-
 .btn-salir-match { background: transparent; color: #ff4444; font-size: 10px; font-family: 'Orbitron'; padding: 10px; border-radius: 8px; width: 100%; cursor: pointer; border: 1px dashed rgba(255,68,68,0.3); }
-.btn-salir-match:hover { background: rgba(255,68,68,0.1); border-color: #ff4444; }
 
 /* ========================================================
-   AJUSTES EXCLUSIVOS PARA PANTALLA DE TV (PÚBLICO)
+   ESTILOS CONTROLADORES DE ANIMACIONES FLOTANTES (TV Y OPERADOR)
    ======================================================== */
-.pagina-publico .panel-operador-rapido { display: none !important; }
-.pagina-publico .centro { background: transparent; border: none; box-shadow: none; backdrop-filter: none; justify-content: flex-start; padding-top: 40px; }
-.pagina-publico .bando.rojo { margin-left: 10px; }
-.pagina-publico .bando.azul { margin-right: 10px; }
+.puntos.hit { animation: puntoHit 0.3s ease-out; }
+@keyframes puntoHit {
+    0% { transform: scale(1); text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+    50% { transform: scale(1.15); text-shadow: 0 0 40px #fff; }
+    100% { transform: scale(1); text-shadow: 0 0 20px rgba(255,255,255,0.2); }
+}
 
-/* Hit Indicator en Pantalla Pública */
-.icono-hit-reciente { position: absolute; width: 80px; height: 80px; opacity: 0; transform: scale(0.5); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10; bottom: 15%; }
-.icono-hit-reciente.show { opacity: 1; transform: scale(1); }
-.rojo .icono-hit-reciente { right: 40px; filter: drop-shadow(0 0 20px #fff); }
-.azul .icono-hit-reciente { left: 40px; filter: drop-shadow(0 0 20px #fff); }
+.texto-flotante {
+    position: absolute; font-size: 4vw; font-family: 'Orbitron', sans-serif; font-weight: 900;
+    color: #ffd600; text-shadow: 0 0 10px #000, 0 0 20px #ffd600; pointer-events: none;
+    animation: flotarArriba 1s ease-out forwards; z-index: 100; top: 20%; left: 50%; transform: translateX(-50%);
+}
+@keyframes flotarArriba {
+    0% { opacity: 1; margin-top: 0; transform: translateX(-50%) scale(1); }
+    100% { opacity: 0; margin-top: -100px; transform: translateX(-50%) scale(1.5); }
+}
 
-/* ========================================================
-   ANIMACIONES EXPLOSIVAS DE PUNTOS Y BOTONERA DE ÍCONOS
-   ======================================================== */
+.texto-flotante-tv {
+    position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    pointer-events: none; animation: flotarArribaTV 1.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    z-index: 500; top: 25%; left: 50%; transform: translateX(-50%);
+}
+@keyframes flotarArribaTV {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.4) translateY(60px); }
+    25% { opacity: 1; transform: translateX(-50%) scale(1.1) translateY(0); }
+    80% { opacity: 1; transform: translateX(-50%) scale(1) translateY(-40px); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1.4) translateY(-100px); filter: blur(4px); }
+}
 
-/* Clases de los íconos de los botones */
 .tkd-icon { width: 100%; height: 100%; background-size: contain; background-repeat: no-repeat; background-position: center; display: inline-block; filter: invert(1); }
 .icon-punio { background-image: url('../puño.png'); } 
 .icon-peto { background-image: url('../pechera.png'); } 
@@ -227,66 +225,73 @@
 .icon-casco { background-image: url('../cabezal.png'); } 
 .icon-cascogiro { background-image: url('../cabezal-giro.png'); }
 
-/* Grilla de botones con íconos */
 .fila-puntos-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
 .btn-pt-icon { display: flex; flex-direction: column; align-items: center; justify-content: center; background: #151826; border-bottom: 4px solid #0a0c14; padding: 8px 4px; gap: 4px; }
-.btn-pt-icon .tkd-icon { width: 22px; height: 22px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.4)); transition: 0.2s; }
+.btn-pt-icon .tkd-icon { width: 22px; height: 22px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.4)); }
 .btn-pt-icon span:last-child { font-size: 14px; font-family: 'Teko', sans-serif; letter-spacing: 1px; color: #aaa;}
 
-/* Hover de los botones de Puntos */
 .rojo .btn-pt-icon:hover { background: #321818; }
 .rojo .btn-pt-icon:hover .tkd-icon { filter: drop-shadow(0 0 8px #ff3344); }
 .rojo .btn-pt-icon:hover span:last-child { color: #ff3344; text-shadow: 0 0 10px #ff3344; }
-
 .azul .btn-pt-icon:hover { background: #122838; }
 .azul .btn-pt-icon:hover .tkd-icon { filter: drop-shadow(0 0 8px #00ddff); }
 .azul .btn-pt-icon:hover span:last-child { color: #00ddff; text-shadow: 0 0 10px #00ddff; }
 
-/* Animación del número central (Latido Neón) */
-@keyframes puntoHit {
-    0% { transform: scale(1); color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
-    50% { transform: scale(1.3); color: #ffd600; text-shadow: 0 0 40px #ffd600, 0 0 80px #ffd600; }
-    100% { transform: scale(1); color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.2); }
-}
+/* ========================================================
+   MODALES AISLADOS (EVITA EL DESACOMODO RADICAL)
+   ======================================================== */
+.modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(3, 4, 9, 0.85); display: none; justify-content: center; align-items: center; z-index: 200; backdrop-filter: blur(12px); }
+.modal-overlay.activa { display: flex; }
+.modal-box { background: #121526; border: 2px solid rgba(255, 255, 255, 0.08); padding: 40px; border-radius: 24px; box-shadow: 0 40px 80px rgba(0,0,0,0.8); }
 
-.puntos.hit {
-    animation: puntoHit 0.3s ease-out;
-}
+/* --- GRILLA DEL OPERADOR --- */
+#modal-round .modal-box { text-align: center; border-color: #ffd600; box-shadow: 0 0 50px rgba(255, 214, 0, 0.15); }
+.tabla-estadisticas { display: flex; flex-direction: column; gap: 6px; background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.05); margin-bottom: 20px; width: 100%; }
+.stat-header { display: grid; grid-template-columns: 1fr 140px 1fr; align-items: center; font-family: 'Orbitron'; font-size: 16px; font-weight: 900; color: #8da2be; padding-bottom: 15px; border-bottom: 2px dashed rgba(255,255,255,0.15); margin-bottom: 10px; }
+.stat-header div:first-child { color: #ff3344; font-size: 22px; text-shadow: 0 0 15px rgba(255,51,68,0.5); }
+.stat-header div:last-child { color: #00ddff; font-size: 22px; text-shadow: 0 0 15px rgba(0,221,255,0.5); }
+.stat-row { display: grid; grid-template-columns: 1fr 140px 1fr; align-items: center; background: rgba(255, 255, 255, 0.02); border-radius: 8px; padding: 6px 10px; font-family: 'Teko', sans-serif; font-size: 32px; font-weight: 900; line-height: 1; transition: 0.2s; }
+.stat-row:hover { background: rgba(255, 255, 255, 0.06); transform: scale(1.02); }
+.stat-r-val { color: #ff3344; text-shadow: 0 0 10px rgba(255,51,68,0.4); }
+.stat-a-val { color: #00ddff; text-shadow: 0 0 10px rgba(0,221,255,0.4); }
+.stat-row div:nth-child(2) { font-family: 'Orbitron'; font-size: 11px; color: #ffd600; letter-spacing: 2px; display: flex; justify-content: center; align-items: center; }
+.stat-icon-wrapper .tkd-icon { width: 28px; height: 28px; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+.stat-total { background: rgba(255, 214, 0, 0.1); border: 1px solid rgba(255, 214, 0, 0.3); font-size: 45px; margin-bottom: 10px; }
+.stat-total div:nth-child(2) { color: #ffd600; font-size: 16px; text-shadow: 0 0 15px rgba(255,214,0,0.6); }
 
-/* Animación del Texto Flotante (+1, +2, etc) */
-.texto-flotante {
-    position: absolute;
-    font-size: 4vw;
-    font-family: 'Orbitron', sans-serif;
-    font-weight: 900;
-    color: #ffd600;
-    text-shadow: 0 0 10px #000, 0 0 20px #ffd600;
-    pointer-events: none;
-    animation: flotarArriba 1s ease-out forwards;
-    z-index: 100;
-    top: 20%;
-    left: 50%;
-    transform: translateX(-50%);
-}
+/* --- GRILLA BLINDADA DE LA TV (PREFIJO .pub-) --- */
+#pub-modal-round .modal-box { text-align: center; border-color: #ffd600; box-shadow: 0 0 60px rgba(255, 214, 0, 0.2); padding: 35px; }
+.pub-tabla-stats { display: flex; flex-direction: column; gap: 8px; background: rgba(0, 0, 0, 0.75); padding: 25px; border-radius: 20px; border: 2px solid rgba(255, 255, 255, 0.04); margin-top: 20px; width: 100%; box-shadow: inset 0 0 30px rgba(0,0,0,0.8); }
+.pub-stat-header { display: grid; grid-template-columns: 1fr 180px 1fr; align-items: center; font-family: 'Orbitron'; font-size: 20px; font-weight: 900; color: #8da2be; padding-bottom: 15px; border-bottom: 2px dashed rgba(255,255,255,0.2); margin-bottom: 12px; text-transform: uppercase; }
+.pub-stat-header div:first-child { color: #ff3344; font-size: 28px; text-shadow: 0 0 20px rgba(255,51,68,0.6); font-family: 'Teko'; }
+.pub-stat-header div:last-child { color: #00ddff; font-size: 28px; text-shadow: 0 0 20px rgba(0,221,255,0.6); font-family: 'Teko'; }
+.pub-stat-row { display: grid; grid-template-columns: 1fr 180px 1fr; align-items: center; background: rgba(255, 255, 255, 0.01); border-radius: 10px; padding: 8px 15px; font-family: 'Teko', sans-serif; font-size: 38px; font-weight: 900; line-height: 1; border-bottom: 1px solid rgba(255,255,255,0.02); }
+.pub-r-val { color: #ff3344; text-shadow: 0 0 15px rgba(255,51,68,0.5); }
+.pub-a-val { color: #00ddff; text-shadow: 0 0 15px rgba(0,221,255,0.5); }
+.pub-stat-row div:nth-child(2) { font-family: 'Orbitron'; font-size: 12px; color: #ffd600; letter-spacing: 2px; display: flex; justify-content: center; align-items: center; font-weight: 900; }
+.pub-stat-total { background: rgba(255, 214, 0, 0.08); border: 2px solid rgba(255, 214, 0, 0.25); font-size: 52px; margin-bottom: 12px; padding: 12px 15px; }
+.pub-stat-total div:nth-child(2) { color: #ffd600; font-size: 18px; text-shadow: 0 0 20px rgba(255,214,0,0.7); }
 
-@keyframes flotarArriba {
-    0% { opacity: 1; margin-top: 0; transform: translateX(-50%) scale(1); }
-    100% { opacity: 0; margin-top: -100px; transform: translateX(-50%) scale(1.5); }
-}
+/* Titulaciones modales compartidos */
+#modal-r-titulo, #pub-modal-r-titulo { font-family: 'Orbitron'; font-size: 22px; color: #fff; letter-spacing: 4px; text-align: center; margin-bottom: 5px; font-weight: 900; }
+#modal-r-ganador, #pub-modal-r-ganador { font-family: 'Teko', sans-serif; font-size: 58px; color: #ffd600; letter-spacing: 2px; text-shadow: 0 0 25px rgba(255, 214, 0, 0.6); text-transform: uppercase; line-height: 1; margin: 5px 0; font-weight: 900; text-align: center; }
+#modal-r-criterio, #pub-modal-r-criterio { font-family: 'Orbitron'; font-size: 14px; color: #00ddff; letter-spacing: 2px; margin-bottom: 20px; font-weight: 900; text-align: center; }
+
+/* Votos manuales */
+.btn-voto-rojo, .btn-voto-azul { flex: 1; padding: 15px; font-family: 'Orbitron'; font-weight: 900; border: none; border-radius: 12px; cursor: pointer; color: #fff; font-size: 13px; transition: 0.2s; }
+.btn-voto-rojo { background: #a7131f; border-bottom: 4px solid #5c070c; }
+.btn-voto-azul { background: #0b3c75; border-bottom: 4px solid #051d3b; }
 
 /* ========================================================
-   ANIMACIONES ÉPICAS PANTALLA PÚBLICO (TV)
+   EFECTO PULSO NEÓN CON PATRÓN CONSTANTE (100% COMPATIBLE)
    ======================================================== */
-.texto-flotante-tv {
-    position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    font-family: 'Orbitron', sans-serif; font-weight: 900; color: #ffd600; text-shadow: 0 0 10px #000, 0 0 30px #ffd600;
-    pointer-events: none; animation: flotarArribaTV 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    z-index: 100; top: 30%; left: 50%; transform: translateX(-50%);
+@keyframes neon-pulse-winner {
+    0% { box-shadow: 0 0 20px var(--glow-color), inset 0 0 25px var(--glow-color); border-color: rgba(255,255,255,0.6); }
+    50% { box-shadow: 0 0 70px var(--glow-color), inset 0 0 45px var(--glow-color); border-color: var(--glow-color); }
+    100% { box-shadow: 0 0 20px var(--glow-color), inset 0 0 25px var(--glow-color); border-color: rgba(255,255,255,0.6); }
 }
-
-@keyframes flotarArribaTV {
-    0% { opacity: 0; transform: translateX(-50%) scale(0.5) translateY(50px); }
-    20% { opacity: 1; transform: translateX(-50%) scale(1.2) translateY(0); }
-    80% { opacity: 1; transform: translateX(-50%) scale(1) translateY(-60px); }
-    100% { opacity: 0; transform: translateX(-50%) scale(1.5) translateY(-120px); filter: blur(5px); }
+.bando.round-win-glow {
+    animation: neon-pulse-winner 1s infinite alternate !important;
+    border-width: 5px !important;
+    z-index: 50;
 }

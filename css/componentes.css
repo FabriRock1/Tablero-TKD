@@ -265,6 +265,7 @@ body {
 .toggle-slider { width: 16px; height: 16px; background: #64748b; border-radius: 50%; position: absolute; top: 2px; left: 2px; transition: 0.3s; }
 .toggle-checkbox:checked + .toggle-switch { background: rgba(0, 230, 118, 0.15); border-color: #00e676; }
 .toggle-checkbox:checked + .toggle-switch .toggle-slider { left: 24px; background: #00e676; box-shadow: 0 0 10px #00e676; }
+
 /* ========================================================
    DIAGNOSTICO JOYSTICKS MAPPING (PANTALLA DE TEST)
    ======================================================== */
@@ -304,6 +305,7 @@ body {
 
 .ps-btn.prendido { color: #000 !important; border-color: #ffd600 !important; background: #ffd600 !important; box-shadow: 0 0 15px rgba(255,214,0,0.6); font-weight: bold; transform: scale(1.1); }
 .ps-stick.prendido { background: rgba(255,214,0,0.4) !important; border-color: #ffd600 !important; box-shadow: 0 0 15px rgba(255,214,0,0.6); transform: scale(1.1); }
+
 /* Panel de Torneo más compacto */
 .panel-registro-esports {
     gap: 12px !important; /* Reducimos el espacio entre elementos */
@@ -320,3 +322,36 @@ body {
 
 /* Reducimos el tamaño de las fuentes un poco para que no sobrepase la altura */
 .registro-header { font-size: 11px !important; margin-bottom: 5px !important; }
+
+
+/* ========================================================
+   SCROLLBARS CYBER (REEMPLAZO DE BARRAS POR DEFECTO)
+   ======================================================== */
+
+/* Para navegadores basados en WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+    width: 6px;  /* Ancho de la barra vertical */
+    height: 8px; /* Alto de la barra horizontal */
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 12, 22, 0.8); /* Fondo oscuro que se camufla */
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 221, 255, 0.2); /* Cian semi-transparente muy sutil */
+    border-radius: 10px;
+    border: 1px solid rgba(0, 221, 255, 0.1);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 221, 255, 0.6); /* Se ilumina cuando le pasás el mouse */
+    box-shadow: 0 0 10px rgba(0, 221, 255, 0.5);
+}
+
+/* Para Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(0, 221, 255, 0.3) rgba(10, 12, 22, 0.8);
+}

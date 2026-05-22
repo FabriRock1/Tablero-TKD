@@ -34,6 +34,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById(`j${i}-rojo-box`)) document.getElementById(`j${i}-rojo-box`).style.display = m;
             if(document.getElementById(`j${i}-azul-box`)) document.getElementById(`j${i}-azul-box`).style.display = m;
         }
+
+        if(configPelea && configPelea.tiempoRound) {
+            tiempoRestante = configPelea.tiempoRound;
+        }
+
         actualizarPantallaCombate();
         setTimeout(actualizarPantallaCombate, 500); 
     }
@@ -76,15 +81,21 @@ window.procesarIntencionVotoDirecto = function(bando, cantidad, tipo, index = 0)
     if(configPelea.coincidenciasRequeridas === 1) { cambiarPuntosDirecto(bando, cantidad, tipo); return; }
 
     let ahora = Date.now();
-    colaDeVotos.push({ bando, cantidad, tipo, idJuez: realJ, timestamp: ahora });
-    colaDeVotos = colaDeVotos.filter(v => (ahora - v.timestamp) <= 2000); 
+    colaDeVotos = colaDeVotos.filter(v => (ahora - v.timestamp) <= 1200); 
+
+    let votoExistente = colaDeVotos.find(v => v.idJuez === realJ && v.bando === bando && v.tipo === tipo);
+    if(votoExistente) {
+        votoExistente.timestamp = ahora;
+    } else {
+        colaDeVotos.push({ bando, cantidad, tipo, idJuez: realJ, timestamp: ahora });
+    }
 
     let match = colaDeVotos.filter(v => v.bando === bando && v.cantidad === cantidad && v.tipo === tipo);
-    let jueces = [...new Set(match.map(v => v.idJuez))];
+    let juecesUnicos = [...new Set(match.map(v => v.idJuez))];
 
-    if(jueces.length >= configPelea.coincidenciasRequeridas) {
+    if(juecesUnicos.length >= configPelea.coincidenciasRequeridas) {
         cambiarPuntosDirecto(bando, cantidad, tipo);
-        jueces.forEach(j => { let box = document.getElementById(`j${j+1}-${bando}-box`); if(box) { box.classList.add('activo'); setTimeout(()=>box.classList.remove('activo'),1000); } });
+        juecesUnicos.forEach(j => { let box = document.getElementById(`j${j+1}-${bando}-box`); if(box) { box.classList.add('activo'); setTimeout(()=>box.classList.remove('activo'),1000); } });
         colaDeVotos = colaDeVotos.filter(v => !(v.bando === bando && v.tipo === tipo));
     }
 };
@@ -202,13 +213,10 @@ function terminarKyeShi() {
     corriendo = false; 
     fase = 'pelea'; 
     tiempoRestante = tiempoPeleaGuardado; 
-    
     let lbl = document.getElementById('lbl-fase'); 
     if(lbl) lbl.innerText = "ROUND"; 
-    
     let btn = document.getElementById('btn-iniciar');
     if(btn) { btn.innerText = "▶ START / PAUSE"; btn.style.background = "#00b359"; }
-    
     actualizarPantallaCombate(); 
 }
 
@@ -229,7 +237,7 @@ function evaluarSuperioridad() {
     if(gR !== gA) return procesarFinRound(gR>gA?'rojo':'azul', "Puntos por Giros.");
     if(r.casco !== a.casco) return procesarFinRound(r.casco>a.casco?'rojo':'azul', "Impactos a la Cabeza.");
     if(r.peto !== a.peto) return procesarFinRound(r.peto>a.peto?'rojo':'azul', "Impactos al Peto.");
-    document.getElementById('contenedor-estadisticas').style.display = "none"; document.getElementById('contenedor-voto-manual').style.display = "block"; document.getElementById('btn-modal-accion').style.display = "none"; document.getElementById('modal-round').classList.add('activa');
+    document.getElementById('contenedor-estadisticas').style.display = "none"; document.getElementById('contenedor-voto-manual').style.display = "flex"; document.getElementById('btn-modal-accion').style.display = "none"; document.getElementById('modal-round').classList.add('activa');
 }
 
 function procesarFinRound(ganador, motivo) {
@@ -238,44 +246,58 @@ function procesarFinRound(ganador, motivo) {
         if(combate.rojo.roundsGanados >= 2) { 
             ganadorDelCombate = 'rojo'; 
             guardarProgresoLlave('rojo');
-            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: HONG (ROJO)", motivo); 
+            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: HONG (ROJO)", motivo, 'rojo'); 
         }
         else if(combate.azul.roundsGanados >= 2) { 
             ganadorDelCombate = 'azul'; 
             guardarProgresoLlave('azul');
-            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: CHONG (AZUL)", motivo); 
+            abrirModalFinal("COMBATE FINALIZADO", "GANADOR: CHONG (AZUL)", motivo, 'azul'); 
         }
-        else { abrirModalFinal(`ROUND ${roundActual} TERMINADO`, `GANADOR: ${ganador.toUpperCase()}`, motivo); }
+        else { abrirModalFinal(`ROUND ${roundActual} TERMINADO`, `GANADOR: ${ganador==='rojo'?'HONG (ROJO)':'CHONG (AZUL)'}`, motivo, ganador); }
     } else {
         if(roundActual >= 3) { 
             ganadorDelCombate = combate.rojo.puntos>combate.azul.puntos?'rojo':'azul'; 
             guardarProgresoLlave(ganadorDelCombate);
-            abrirModalFinal("COMBATE FIN", `GANADOR: ${ganadorDelCombate.toUpperCase()}`, "Puntaje Acumulativo."); 
+            abrirModalFinal("COMBATE FIN", `GANADOR: ${ganadorDelCombate==='rojo'?'HONG (ROJO)':'CHONG (AZUL)'}`, "Puntaje Acumulativo.", ganadorDelCombate); 
         }
-        else abrirModalFinal(`ROUND ${roundActual} TERMINADO`, "PREPARAR SIGUIENTE ROUND", motivo);
+        else abrirModalFinal(`ROUND ${roundActual} TERMINADO`, "PREPARAR SIGUIENTE ROUND", motivo, ganador);
     }
 }
 
-// ACÁ SE GUARDA QUIÉN GANÓ UTILIZANDO LAS REGLAS ACTIVAS DE LA PELEA
 function guardarProgresoLlave(ganador) {
     if(r && r.keyLlave && r.matchId) {
         let prog = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
         if(!prog[r.keyLlave]) prog[r.keyLlave] = {};
-        
         let idGanador = ganador === 'rojo' ? r.idRojo : r.idAzul;
-        prog[r.keyLlave][r.matchId] = idGanador;
-        
+        prog[r.keyLlave][r.matchId] = idGanador; 
         localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(prog));
     }
 }
 
-function abrirModalFinal(tit, gan, crit) {
+function abrirModalFinal(tit, gan, crit, bandoGanador) {
     if(!document.getElementById('modal-round')) return;
+    
+    // Encender vivorita local
+    document.querySelectorAll('.bando').forEach(el => el.classList.remove('round-win-glow'));
+    if(bandoGanador) {
+        let bandoEl = document.querySelector(`.bando.${bandoGanador}`);
+        if(bandoEl) bandoEl.classList.add('round-win-glow');
+    }
+
+    let statsCont = document.getElementById('contenedor-estadisticas');
+    if(statsCont) {
+        statsCont.style.setProperty('display', 'none', 'important');
+        statsCont.style.opacity = '0';
+        statsCont.style.transition = 'opacity 0.6s ease';
+    }
+
     document.getElementById('modal-r-titulo').innerText = tit; document.getElementById('modal-r-ganador').innerText = gan; document.getElementById('modal-r-criterio').innerText = "Criterio: " + crit;
     document.getElementById('st-pt-r').innerText = combate.rojo.puntos; document.getElementById('st-pt-a').innerText = combate.azul.puntos;
     document.getElementById('st-pu-r').innerText = combate.rojo.punio; document.getElementById('st-pu-a').innerText = combate.azul.punio;
     document.getElementById('st-pe-r').innerText = combate.rojo.peto; document.getElementById('st-pe-a').innerText = combate.azul.peto;
+    document.getElementById('st-pg-r').innerText = combate.rojo.petogiro; document.getElementById('st-pg-a').innerText = combate.azul.petogiro;
     document.getElementById('st-ca-r').innerText = combate.rojo.casco; document.getElementById('st-ca-a').innerText = combate.azul.casco;
+    document.getElementById('st-cg-r').innerText = combate.rojo.cascogiro; document.getElementById('st-cg-a').innerText = combate.azul.cascogiro;
     document.getElementById('st-gj-r').innerText = combate.azul.gamjeoms; document.getElementById('st-gj-a').innerText = combate.rojo.gamjeoms;
     
     let btnContinuar = document.getElementById('btn-modal-accion');
@@ -286,27 +308,61 @@ function abrirModalFinal(tit, gan, crit) {
 
     document.getElementById('modal-round').style.display = 'flex';
     document.getElementById('modal-round').classList.add('activa');
-    canalTransmision.postMessage({ comandoAccion: "MOSTRAR_ESTADISTICAS_PUBLICO", tituloRound: tit, ganadorRoundTexto: gan, criterioRoundTexto: crit });
+    
+    canalTransmision.postMessage({ 
+        comandoAccion: "MOSTRAR_GANADOR_PUBLICO", 
+        tituloRound: tit, 
+        ganadorRoundTexto: gan, 
+        criterioRoundTexto: crit,
+        bandoGanador: bandoGanador,
+        stats: {
+            ptR: combate.rojo.puntos, ptA: combate.azul.puntos,
+            puR: combate.rojo.punio, puA: combate.azul.punio,
+            peR: combate.rojo.peto, peA: combate.azul.peto,
+            pgR: combate.rojo.petogiro, pgA: combate.azul.petogiro,
+            caR: combate.rojo.casco, caA: combate.azul.casco,
+            cgR: combate.rojo.cascogiro, cgA: combate.azul.cascogiro,
+            gjR: combate.azul.gamjeoms, gjA: combate.rojo.gamjeoms
+        }
+    });
+
+    setTimeout(() => {
+        if(statsCont) {
+            statsCont.style.setProperty('display', 'flex', 'important');
+            setTimeout(() => { statsCont.style.opacity = '1'; }, 50); 
+        }
+        canalTransmision.postMessage({ comandoAccion: "REVELAR_ESTADISTICAS_TV" });
+    }, 2500);
 }
 
 window.avanzarSiguientePaso = function() {
     document.getElementById('modal-round').classList.remove('activa');
     document.getElementById('modal-round').style.display = 'none';
-    canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
-    
-    if(ganadorDelCombate) { 
-        window.location.href = 'torneo.html'; // Devuelve a la pantalla de llaves
-    }
-    else {
-        roundActual++; if(configPelea.sistema === 'best3') { ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); }
-        fase = 'descanso'; tiempoRestante = configPelea.tiempoDescanso; document.getElementById('lbl-fase').innerText = "DESCANSO"; actualizarPantallaCombate();
-        corriendo = true;
-        intervalo = setInterval(() => { if(tiempoRestante>0) { tiempoRestante--; actualizarPantallaCombate(); } else { terminarDescanso(); } }, 1000);
-    }
+
+    setTimeout(() => {
+        document.querySelectorAll('.bando').forEach(el => el.classList.remove('round-win-glow'));
+        canalTransmision.postMessage({ comandoAccion: "OCULTAR_ESTADISTICAS_PUBLICO" });
+        
+        if(ganadorDelCombate) { 
+            window.location.href = 'torneo.html'; 
+        }
+        else {
+            roundActual++; 
+            if(configPelea.sistema === 'best3') { 
+                ['rojo','azul'].forEach(b => { combate[b].puntos=0; combate[b].gamjeoms=0; }); 
+            }
+            fase = 'pelea'; 
+            tiempoRestante = configPelea.tiempoRound; 
+            let lbl = document.getElementById('lbl-fase'); 
+            if(lbl) lbl.innerText = "ROUND"; 
+            actualizarPantallaCombate();
+        }
+    }, 2000); 
 };
 
-window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.display="grid"; document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
+window.asignarGanadorManual = function(b) { document.getElementById('contenedor-voto-manual').style.display="none"; document.getElementById('contenedor-estadisticas').style.setProperty('display', 'flex', 'important'); document.getElementById('btn-modal-accion').style.display="block"; procesarFinRound(b, "Decisión Arbitral Unánime."); };
 
+// ================= RECEPTOR DE TV Y CELULARES =================
 canalTransmision.onmessage = function(e) {
     let d = e.data; 
     if (d.comandoAccion === "VOTO_MOBILE") { if(document.getElementById('cronometro')) { window.procesarIntencionVotoDirecto(d.bando, d.cantidad, d.tipo, d.juez); } return; }
@@ -315,11 +371,58 @@ canalTransmision.onmessage = function(e) {
     
     if(!document.getElementById('cronometro')) {
         if(d.comandoAccion === "VOTO_JUEZ") {
-            let b = document.getElementById(`pub-${d.juez}-${d.bando}-box`); let v = document.getElementById(`pub-${d.juez}-${d.bando}-val`);
+            let b = document.getElementById(`pub-j${d.juez+1}-${d.bando}-box`); let v = document.getElementById(`pub-j${d.juez+1}-${d.bando}-val`);
             if(b && v) { v.innerText = d.cantidad>0?`+${d.cantidad}`:d.cantidad; b.classList.add('parpadeo-voto'); setTimeout(()=>{b.classList.remove('parpadeo-voto'); v.innerText="--";},900); } return;
         }
-        if(d.comandoAccion === "MOSTRAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-r-titulo').innerText = d.tituloRound; document.getElementById('pub-modal-r-ganador').innerText = d.ganadorRoundTexto; document.getElementById('pub-modal-r-criterio').innerText = d.criterioRoundTexto; document.getElementById('pub-modal-round').classList.add('activa'); document.getElementById('pub-modal-round').style.display='flex'; return; }
-        if(d.comandoAccion === "OCULTAR_ESTADISTICAS_PUBLICO") { document.getElementById('pub-modal-round').classList.remove('activa'); document.getElementById('pub-modal-round').style.display='none'; return; }
+        
+        if(d.comandoAccion === "MOSTRAR_GANADOR_PUBLICO") { 
+            let statsContTV = document.getElementById('pub-contenedor-estadisticas');
+            if(statsContTV) {
+                statsContTV.style.setProperty('display', 'none', 'important');
+                statsContTV.style.opacity = '0';
+                statsContTV.style.transition = 'opacity 0.6s ease';
+            }
+
+            document.querySelectorAll('.bando').forEach(el => el.classList.remove('round-win-glow'));
+            if(d.bandoGanador) {
+                let bandoEl = document.querySelector(`.bando.${d.bandoGanador}`);
+                if(bandoEl) bandoEl.classList.add('round-win-glow');
+            }
+
+            document.getElementById('pub-modal-r-titulo').innerText = d.tituloRound; 
+            document.getElementById('pub-modal-r-ganador').innerText = d.ganadorRoundTexto; 
+            document.getElementById('pub-modal-r-criterio').innerText = d.criterioRoundTexto; 
+            
+            if(d.stats) {
+                document.getElementById('pub-st-pt-r').innerText = d.stats.ptR; document.getElementById('pub-st-pt-a').innerText = d.stats.ptA;
+                document.getElementById('pub-st-pu-r').innerText = d.stats.puR; document.getElementById('pub-st-pu-a').innerText = d.stats.puA;
+                document.getElementById('pub-st-pe-r').innerText = d.stats.peR; document.getElementById('pub-st-pe-a').innerText = d.stats.peA;
+                document.getElementById('pub-st-pg-r').innerText = d.stats.pgR; document.getElementById('pub-st-pg-a').innerText = d.stats.pgA;
+                document.getElementById('pub-st-ca-r').innerText = d.stats.caR; document.getElementById('pub-st-ca-a').innerText = d.stats.caA;
+                document.getElementById('pub-st-cg-r').innerText = d.stats.cgR; document.getElementById('pub-st-cg-a').innerText = d.stats.cgA;
+                document.getElementById('pub-st-gj-r').innerText = d.stats.gjR; document.getElementById('pub-st-gj-a').innerText = d.stats.gjA;
+            }
+            
+            document.getElementById('pub-modal-round').classList.add('activa'); 
+            document.getElementById('pub-modal-round').style.display='flex'; 
+            return; 
+        }
+
+        if(d.comandoAccion === "REVELAR_ESTADISTICAS_TV") {
+            let statsContTV = document.getElementById('pub-contenedor-estadisticas');
+            if(statsContTV) {
+                statsContTV.style.setProperty('display', 'flex', 'important');
+                setTimeout(() => { statsContTV.style.opacity = '1'; }, 50);
+            }
+            return;
+        }
+
+        if(d.comandoAccion === "OCULTAR_ESTADISTICAS_PUBLICO") { 
+            document.querySelectorAll('.bando').forEach(el => el.classList.remove('round-win-glow'));
+            document.getElementById('pub-modal-round').classList.remove('activa'); 
+            document.getElementById('pub-modal-round').style.display='none'; 
+            return; 
+        }
 
         document.getElementById('pub-nombre-rojo').innerText = d.nombreRojo; document.getElementById('pub-subtexto-rojo').innerText = d.subtextoRojo; document.getElementById('pub-rank-rojo').innerText = d.rankRojo;
         document.getElementById('pub-nombre-azul').innerText = d.nombreAzul; document.getElementById('pub-subtexto-azul').innerText = d.subtextoAzul; document.getElementById('pub-rank-azul').innerText = d.rankAzul;
@@ -346,11 +449,25 @@ canalTransmision.onmessage = function(e) {
         if(d.hitBando && d.hitTipo && d.hitCantidad > 0) {
             let numDisplay = document.getElementById(`pub-pts-${d.hitBando}`);
             if (numDisplay) {
-                numDisplay.classList.remove('hit'); void numDisplay.offsetWidth; numDisplay.classList.add('hit');
-                let contenedorPadre = numDisplay.parentElement; let flotante = document.createElement('div'); flotante.className = 'texto-flotante-tv';
+                numDisplay.classList.remove('hit'); 
+                void numDisplay.offsetWidth; 
+                numDisplay.classList.add('hit');
+                
+                let contenedorPadre = numDisplay.parentElement; 
+                let flotante = document.createElement('div'); 
+                flotante.className = 'texto-flotante-tv';
                 let colorIcono = d.hitBando === 'rojo' ? '#ff3344' : '#00ddff';
-                flotante.innerHTML = `<span class="tkd-icon ${iconClasses[d.hitTipo]}" style="width: 8vw; height: 8vw; display:block; filter: drop-shadow(0 0 10px ${colorIcono});"></span><span style="font-size: 6vw;">+${d.hitCantidad}</span>`;
-                contenedorPadre.appendChild(flotante); setTimeout(() => { flotante.remove(); }, 1200);
+                
+                let nombresPuntos = { 'punio': 'PUÑO', 'peto': 'PETO', 'casco': 'CABEZA', 'petogiro': 'GIRO AL PETO', 'cascogiro': 'GIRO A CABEZA' };
+                let nombreGolpe = nombresPuntos[d.hitTipo] || 'PUNTOS';
+
+                flotante.innerHTML = `
+                    <div style="font-size: 10vw; font-family: 'Teko', sans-serif; color: ${colorIcono}; text-shadow: 0 0 20px ${colorIcono}, 0 0 40px #fff; line-height: 0.8;">+${d.hitCantidad}</div>
+                    <div style="font-size: 2vw; background: rgba(0,0,0,0.8); padding: 5px 20px; border-radius: 12px; margin-top: 15px; border: 2px solid ${colorIcono}; color: #fff; letter-spacing: 3px; font-weight: 900; box-shadow: 0 0 15px ${colorIcono};">${nombreGolpe}</div>
+                `;
+                
+                contenedorPadre.appendChild(flotante); 
+                setTimeout(() => { flotante.remove(); }, 1500);
             }
         }
     }

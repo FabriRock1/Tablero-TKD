@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if(document.getElementById('cfg-nombre-azul')) document.getElementById('cfg-nombre-azul').value = precarga.azul || "";
             if(document.getElementById('cfg-subtexto-azul')) document.getElementById('cfg-subtexto-azul').value = precarga.clubAzul || "";
             if(document.getElementById('cfg-categoria-combate')) document.getElementById('cfg-categoria-combate').value = precarga.categoria || "COMBATE OFICIAL WT";
-            // NO limpiamos la memoria acá, para que el enlace a la pelea se mantenga
+            sessionStorage.removeItem('smtkd_preload_match'); 
         }
         actualizarTodosLosDisplaysHUD();
         requestAnimationFrame(loopDeteccionFisica);
@@ -113,16 +113,6 @@ window.guardarYComenzar = function() {
     reglas.pointGapActivo = document.getElementById('cfg-pg-act')?.checked ?? true;
     reglas.pointGapPts = valoresHUD['pg-pts'];
 
-    // Pasamos el enlace de la llave al combate y vaciamos la precarga
-    const precarga = JSON.parse(sessionStorage.getItem('smtkd_preload_match'));
-    if(precarga) {
-        reglas.keyLlave = precarga.keyLlave;
-        reglas.matchId = precarga.matchId;
-        reglas.idRojo = precarga.idRojo;
-        reglas.idAzul = precarga.idAzul;
-        sessionStorage.removeItem('smtkd_preload_match'); 
-    }
-
     sessionStorage.setItem('smtkd_active_match_rules', JSON.stringify(reglas));
     window.location.href = 'combate.html';
 };
@@ -174,34 +164,25 @@ window.importarBaseAtletas = function(e) {
     lector.readAsText(archivo);
 };
 
-// ================= NAVEGACIÓN RÁPIDA DE CATEGORÍAS (BARRA SUPERIOR) =================
+// ================= BARRA SUPERIOR DINÁMICA DE BOTONES =================
 window.renderizarBarraCategorias = function() {
-    const bar = document.getElementById('categorias-activas-bar');
-    if(!bar) return;
-
+    const bar = document.getElementById('categorias-activas-bar'); if(!bar) return;
     let combinaciones = [];
     poolCompetidores.forEach(a => {
         let comboId = a.cinturon + "|" + a.peso;
-        if(!combinaciones.find(c => c.id === comboId)) {
-            combinaciones.push({ id: comboId, cinturon: a.cinturon, peso: a.peso });
-        }
+        if(!combinaciones.find(c => c.id === comboId)) combinaciones.push({ id: comboId, cinturon: a.cinturon, peso: a.peso });
     });
-
     combinaciones.sort((a,b) => a.id.localeCompare(b.id));
-
     let fCin = document.getElementById('filtro-cinturon').value;
     let fPes = document.getElementById('filtro-peso').value;
 
     let html = `<button class="btn-cat-activa ${(fCin === 'TODOS' && fPes === 'TODOS') ? 'activa' : ''}" onclick="cambiarCategoriaRapida('TODOS', 'TODOS')"><i class="fa-solid fa-globe"></i> TODOS / LIBRE</button>`;
-
     combinaciones.forEach(c => {
         let isActiva = (c.cinturon === fCin && c.peso === fPes) ? 'activa' : '';
         let cinCorto = c.cinturon.split('(')[0].trim(); 
         let pesoCorto = c.peso.replace('MASCULINO', 'M').replace('FEMENINO', 'F').replace('ADULTOS', 'ADUL').replace('INFANTIL', 'INF').replace('JUVENIL', 'JUV');
-        
         html += `<button class="btn-cat-activa ${isActiva}" onclick="cambiarCategoriaRapida('${c.cinturon}', '${c.peso}')">${cinCorto} | ${pesoCorto}</button>`;
     });
-
     bar.innerHTML = html;
 };
 
@@ -211,11 +192,9 @@ window.cambiarCategoriaRapida = function(cinturon, peso) {
     renderizarLlaveAutomatica();
 };
 
-
-// ================= MOTOR DE ÁRBOL Y AUTO-AVANCE =================
+// ================= PROGRESO Y RECONSTRUCCIÓN DE CRUCES =================
 window.renderizarLlaveAutomatica = function() {
     const box = document.getElementById('bracket-render-box'); if(!box) return;
-    
     let fCin = document.getElementById('filtro-cinturon').value;
     let fPes = document.getElementById('filtro-peso').value;
     let keyLlave = fCin + "_" + fPes;
@@ -232,136 +211,107 @@ window.renderizarLlaveAutomatica = function() {
     let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
     if(!progreso[keyLlave]) progreso[keyLlave] = {};
 
-    let rondasData = [atletasLlave];
-    let numRondas = Math.ceil(Math.log2(atletasLlave.length));
-    
-    // 1. Proyectar las rondas dinámicamente sin guardar los BYE en la base de datos
-    for(let r = 0; r < numRondas; r++) {
-        let prevRonda = rondasData[r];
-        let nextRonda = [];
-        for(let m = 0; m < prevRonda.length / 2; m++) {
-            let matchId = `r${r}_m${m}`;
-            let ganadorId = progreso[keyLlave][matchId]; // Buscamos si alguien ganó peleando
-            
-            // Si nadie ganó peleando, nos fijamos si alguien avanza por BYE temporal
-            if (!ganadorId) {
-                let rj = prevRonda[m*2];
-                let az = prevRonda[m*2+1];
-                if (rj && !az) ganadorId = rj.id;
-                if (!rj && az) ganadorId = az.id;
-            }
-            
-            let ganadorObj = ganadorId ? poolCompetidores.find(a => a.id === ganadorId) : null;
-            nextRonda.push(ganadorObj || null);
-        }
-        rondasData.push(nextRonda);
-    }
+    let numAtletas = atletasLlave.length;
+    let numRondas = Math.ceil(Math.log2(Math.max(numAtletas, 2)));
+    let slotsBase = Math.pow(2, numRondas);
 
+    let atletasAlineados = [...atletasLlave];
+    while(atletasAlineados.length < slotsBase) { atletasAlineados.push(null); }
+
+    let rondasData = [atletasAlineados];
+    let nombresRondas = ["FINAL", "SEMIFINALES", "CUARTOS DE FINAL", "OCTAVOS DE FINAL", "16VOS DE FINAL"];
     let html = `<div class="torneo-bracket-container"><div class="bracket-esports-layout">`;
-    let nombresRondas = ["FINAL", "SEMIFINALES", "CUARTOS DE FINAL", "OCTAVOS DE FINAL"];
-    
-    // 2. Dibujar las tarjetas
-    for(let r = 0; r < rondasData.length - 1; r++) {
-        html += `<div class="bracket-columna">
-                 <div class="bracket-titulo-ronda">${nombresRondas[nombresRondas.length - (r + 1)] || "RONDA"}</div>`;
+    let subTitulo = (fCin === 'TODOS' && fPes === 'TODOS') ? "LLAVE LIBRE" : `${fPes}`;
+
+    for(let r = 0; r < numRondas; r++) {
+        let tituloRonda = nombresRondas[numRondas - r - 1] || `RONDA ${r+1}`;
+        html += `<div class="bracket-columna"><div class="bracket-titulo-ronda">${tituloRonda} <span style="color:#fff; opacity:0.6; font-size:9px;">(${subTitulo})</span></div>`;
         
-        for(let m = 0; m < rondasData[r].length / 2; m++) {
-            let rj = rondasData[r][m*2];
-            let az = rondasData[r][m*2+1];
-            let matchId = `r${r}_m${m}`;
-            
-            // Separamos al ganador REAL (que peleó) del ganador por BYE
-            let idGanadorReal = progreso[keyLlave][matchId]; 
-            let idGanador = idGanadorReal;
-            let esBye = false;
+        let nextRondaData = [];
+        let numMatches = rondasData[r].length / 2;
 
-            if (!idGanadorReal) {
-                if (rj && !az) { idGanador = rj.id; esBye = true; }
-                if (!rj && az) { idGanador = az.id; esBye = true; }
+        for(let m = 0; m < numMatches; m++) {
+            let rj = rondasData[r][m*2]; let az = rondasData[r][m*2+1];
+            let matchId = `r${r}_m${m}`; let idGanador = progreso[keyLlave][matchId];
+            
+            if (rj && !az && !idGanador) { idGanador = rj.id; progreso[keyLlave][matchId] = rj.id; }
+            else if (!rj && az && !idGanador) { idGanador = az.id; progreso[keyLlave][matchId] = az.id; }
+
+            let ganadorObj = idGanador ? poolCompetidores.find(a => a.id === idGanador) : null;
+            nextRondaData.push(ganadorObj);
+
+            let idR = rj ? rj.nombre : 'ESPERANDO RIVAL'; let clubR = rj ? rj.club : '';
+            let idA = az ? az.nombre : 'ESPERANDO RIVAL'; let clubA = az ? az.club : '';
+            if(!rj && r===0) idR = "BYE / VACANTE"; if(!az && r===0) idA = "BYE / VACANTE";
+
+            let classR = (!rj || (idGanador && idGanador !== (rj?rj.id:''))) ? 'atleta-vacante' : ''; 
+            let classA = (!az || (idGanador && idGanador !== (az?az.id:''))) ? 'atleta-vacante' : '';
+            let disBtn = (!rj || !az || idGanador) ? 'disabled' : '';
+            let txtBtn = idGanador ? "COMBATE CERRADO" : "FIGHT MATCH";
+            
+            let idRojoStr = rj ? rj.id : 'null'; let idAzulStr = az ? az.id : 'null';
+            let claseConector = (r < numRondas - 1) ? ((m % 2 === 0) ? "nodo-semifinal-top" : "nodo-semifinal-bottom") : "nodo-final";
+
+            let controlesFlotantes = "";
+            if(r === 0 && !idGanador) {
+                controlesFlotantes = `
+                <div class="acciones-match-flotantes">
+                    <button class="btn-match-accion edit" title="Subir" onclick="moverAtleta('${idRojoStr}', -1)"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button class="btn-match-accion edit" title="Bajar" onclick="moverAtleta('${idAzulStr}', 1)"><i class="fa-solid fa-arrow-down"></i></button>
+                    <button class="btn-match-accion edit" title="Editar" onclick="editarMatch('${idRojoStr}', '${idAzulStr}')"><i class="fa-solid fa-pen"></i></button>
+                    <button class="btn-match-accion delete" title="Remover" onclick="eliminarMatch('${idRojoStr}', '${idAzulStr}')"><i class="fa-solid fa-trash"></i></button>
+                </div>`;
             }
-
-            let idR = rj ? rj.nombre : 'BYE / ESPERA';
-            let idA = az ? az.nombre : 'BYE / ESPERA';
-            
-            // Desactivamos el botón si ya está peleado o si falta algún atleta
-            let disBtn = (idGanadorReal || !rj || !az) ? 'disabled' : '';
-            
-            let textoBtn = 'FIGHT MATCH';
-            if (idGanadorReal) textoBtn = 'COMBATE CERRADO';
-            else if (esBye) textoBtn = 'AVANZA LIBRE (BYE)'; // Nuevo aviso claro para el operador
-
-            // Permitimos mover o eliminar SOLO si el combate NO se peleó todavía
-            let controlesRj = (r === 0 && rj && !idGanadorReal) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${rj.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${rj.id}', 1)"></i></div>` : '';
-            let controlesAz = (r === 0 && az && !idGanadorReal) ? `<div class="acciones-mover-cyber"><i class="fa-solid fa-chevron-up" onclick="moverAtleta('${az.id}', -1)"></i><i class="fa-solid fa-chevron-down" onclick="moverAtleta('${az.id}', 1)"></i></div>` : '';
-
-            let btnDeshacer = (idGanadorReal && rj && az) ? `<button class="btn-match-accion undo" style="position: absolute; top: -15px; left: -15px; z-index: 20;" onclick="deshacerResultadoMatch('${keyLlave}', '${matchId}')" title="Deshacer Resultado"><i class="fa-solid fa-rotate-left"></i></button>` : '';
 
             html += `
-            <div class="nodo-match">
+            <div class="nodo-match ${claseConector}">
                 <div class="cruce-match-box">
-                    ${btnDeshacer}
-                    <button class="btn-match-accion delete" style="position: absolute; top: -15px; right: -15px; z-index: 20;" onclick="eliminarMatch('${rj?.id||'null'}', '${az?.id||'null'}')" title="Eliminar Atletas"><i class="fa-solid fa-times"></i></button>
-                    
-                    <div class="fila-atleta-llave b-rojo ${!rj ? 'atleta-vacante':''}" style="padding-right: 40px;">
-                        <span class="nombre-llave">${idR}</span>
-                        ${controlesRj}
-                    </div>
-                    
-                    <div class="fila-atleta-llave b-azul ${!az ? 'atleta-vacante':''}" style="padding-right: 40px;">
-                        <span class="nombre-llave">${idA}</span>
-                        ${controlesAz}
-                    </div>
-                    
-                    <button class="btn-lanzar-match" onclick="lanzarMatchSetup('${rj?.id||'null'}', '${az?.id||'null'}', '${keyLlave}', '${matchId}')" ${disBtn}>
-                        ${textoBtn}
-                    </button>
+                    ${controlesFlotantes}
+                    <div class="fila-atleta-llave b-rojo ${classR}"><div><span class="nombre-llave">${idR}</span><span class="club-atleta-llave">${clubR}</span></div></div>
+                    <div class="fila-atleta-llave b-azul ${classA}"><div><span class="nombre-llave">${idA}</span><span class="club-atleta-llave">${clubA}</span></div></div>
+                    <button class="btn-lanzar-match" onclick="lanzarMatchSetup('${idRojoStr}', '${idAzulStr}', '${keyLlave}', '${matchId}')" ${disBtn}>${txtBtn}</button>
                 </div>
             </div>`;
         }
-        html += `</div>`;
+        rondasData[r+1] = nextRondaData; html += `</div>`;
     }
-    
-    html += `</div></div>`;
-    box.innerHTML = html;
+
+    let campeon = rondasData[numRondas][0];
+    if(campeon) {
+        html += `
+        <div class="bracket-columna" style="justify-content: center;"><div class="bracket-titulo-ronda" style="color:#00ff88; border-color:#00ff88;">CAMPEÓN 🏆</div>
+            <div class="cruce-match-box box-campeon" style="border-color:#00ff88; box-shadow: 0 0 30px rgba(0,255,136,0.2); justify-content: center; align-items: center; padding: 40px 20px;">
+                <i class="fa-solid fa-trophy" style="font-size:45px; color:#00ff88; margin-bottom:15px; filter: drop-shadow(0 0 10px #00ff88);"></i>
+                <div class="nombre-llave" style="font-size:22px; color:#fff;">${campeon.nombre}</div><div class="club-atleta-llave" style="color:#00ddff; font-size:12px;">${campeon.club}</div>
+            </div>
+        </div>`;
+    }
+    html += `</div></div>`; box.innerHTML = html;
+    localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
     renderizarBarraCategorias();
-}; 
+};
 
 window.moverAtleta = function(idAtleta, direccion) {
     let fCin = document.getElementById('filtro-cinturon').value;
     let fPes = document.getElementById('filtro-peso').value;
-    
     let atletasLlave = poolCompetidores.filter(a => (fCin === 'TODOS' || a.cinturon === fCin) && (fPes === 'TODOS' || a.peso === fPes));
-    let idxVisual = atletasLlave.findIndex(a => a.id === idAtleta);
-    
-    if(idxVisual < 0) return;
+    let idxVisual = atletasLlave.findIndex(a => a.id === idAtleta); if(idxVisual < 0) return;
     let newIdxVisual = idxVisual + direccion;
-    
     if(newIdxVisual >= 0 && newIdxVisual < atletasLlave.length) {
         let idTarget = atletasLlave[newIdxVisual].id;
-        
         let absIdx1 = poolCompetidores.findIndex(a => a.id === idAtleta);
         let absIdx2 = poolCompetidores.findIndex(a => a.id === idTarget);
-        
-        let temp = poolCompetidores[absIdx1];
-        poolCompetidores[absIdx1] = poolCompetidores[absIdx2];
-        poolCompetidores[absIdx2] = temp;
-        
+        let temp = poolCompetidores[absIdx1]; poolCompetidores[absIdx1] = poolCompetidores[absIdx2]; poolCompetidores[absIdx2] = temp;
         localStorage.setItem('smtkd_competidores', JSON.stringify(poolCompetidores));
         
         let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
-        let keyLlave = fCin + "_" + fPes;
-        if(progreso[keyLlave] && Object.keys(progreso[keyLlave]).length > 0) {
-            delete progreso[keyLlave];
-            localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
-        }
-        
+        delete progreso[fCin + "_" + fPes]; localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
         renderizarLlaveAutomatica();
     }
 };
 
 window.lanzarMatchSetup = function(idR, idA, keyLlave, matchId) {
-    let rj = poolCompetidores.find(a => a.id === idR);
-    let az = poolCompetidores.find(a => a.id === idA);
+    let rj = poolCompetidores.find(a => a.id === idR); let az = poolCompetidores.find(a => a.id === idA);
     sessionStorage.setItem('smtkd_preload_match', JSON.stringify({ 
         rojo: rj ? rj.nombre : '', clubRojo: rj ? rj.club : '', idRojo: idR,
         azul: az ? az.nombre : '', clubAzul: az ? az.club : '', idAzul: idA,
@@ -370,7 +320,16 @@ window.lanzarMatchSetup = function(idR, idA, keyLlave, matchId) {
     window.location.href = 'setup.html';
 };
 
-// ================= MODALES DE EDICIÓN Y BORRADO =================
+window.resetearLlaveActual = function() {
+    let fCin = document.getElementById('filtro-cinturon').value;
+    let fPes = document.getElementById('filtro-peso').value;
+    if(confirm(`🚨 ¿Querés REINICIAR los combates de la categoría: ${fCin} | ${fPes}? Se borrarán los ganadores cargados.`)) {
+        let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
+        delete progreso[fCin + "_" + fPes];
+        localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
+        renderizarLlaveAutomatica();
+    }
+};
 
 window.borrarBaseCompleta = function() { document.getElementById('modal-confirm-delete').classList.add('activa'); };
 window.cerrarModalBorrado = function() { document.getElementById('modal-confirm-delete').classList.remove('activa'); };
@@ -380,8 +339,7 @@ window.ejecutarBorradoBase = function() {
 };
 
 window.editarMatch = function(idRojo, idAzul) {
-    let atletaRojo = poolCompetidores.find(a => a.id === idRojo);
-    let atletaAzul = poolCompetidores.find(a => a.id === idAzul);
+    let atletaRojo = poolCompetidores.find(a => a.id === idRojo); let atletaAzul = poolCompetidores.find(a => a.id === idAzul);
     document.getElementById('edit-id-rojo').value = idRojo; document.getElementById('edit-nombre-rojo').value = atletaRojo ? atletaRojo.nombre : ''; document.getElementById('edit-club-rojo').value = atletaRojo ? atletaRojo.club : '';
     document.getElementById('edit-id-azul').value = idAzul; document.getElementById('edit-nombre-azul').value = atletaAzul ? atletaAzul.nombre : ''; document.getElementById('edit-club-azul').value = atletaAzul ? atletaAzul.club : '';
     document.getElementById('modal-edit-match').classList.add('activa');
@@ -401,39 +359,13 @@ window.ejecutarBorradoMatch = function() {
     if(matchABorrar) {
         poolCompetidores = poolCompetidores.filter(a => a.id !== matchABorrar.idRojo && a.id !== matchABorrar.idAzul);
         localStorage.setItem('smtkd_competidores', JSON.stringify(poolCompetidores));
-        
         let fCin = document.getElementById('filtro-cinturon').value; let fPes = document.getElementById('filtro-peso').value;
         let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
         delete progreso[fCin + "_" + fPes]; localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
-
         actualizarContadorBase(); renderizarLlaveAutomatica();
     }
     cerrarModalBorrarMatch();
 };
-
-window.deshacerResultadoMatch = function(keyLlave, matchId) {
-    if(confirm("¿Deshacer el resultado de este combate?")) {
-        let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
-        if(progreso[keyLlave] && progreso[keyLlave][matchId]) {
-            delete progreso[keyLlave][matchId];
-            localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
-            renderizarLlaveAutomatica();
-        }
-    }
-};
-
-window.resetearLlaveActual = function() {
-    if(confirm("¿Estás seguro de que querés reiniciar el progreso de esta llave? Todos los combates volverán a cero pero los atletas se mantienen.")) {
-        let fCin = document.getElementById('filtro-cinturon').value;
-        let fPes = document.getElementById('filtro-peso').value;
-        let progreso = JSON.parse(localStorage.getItem('smtkd_progreso_llaves')) || {};
-        delete progreso[fCin + "_" + fPes];
-        localStorage.setItem('smtkd_progreso_llaves', JSON.stringify(progreso));
-        renderizarLlaveAutomatica();
-    }
-};
-
-window.cerrarPantallaTest = function() { document.getElementById('pagina-test').classList.remove('activa'); };
 
 function loopTestMandos() {
     if(!document.getElementById('pagina-test')?.classList.contains('activa')) { requestAnimationFrame(loopTestMandos); return; }
@@ -446,10 +378,6 @@ function loopTestMandos() {
         document.getElementById(`btn-${i}-down`)?.classList.toggle('prendido', gp.buttons[13]?.pressed);
         document.getElementById(`btn-${i}-left`)?.classList.toggle('prendido', gp.buttons[14]?.pressed);
         document.getElementById(`btn-${i}-right`)?.classList.toggle('prendido', gp.buttons[15]?.pressed);
-        document.getElementById(`btn-${i}-cr`)?.classList.toggle('prendido', gp.buttons[0]?.pressed); 
-        document.getElementById(`btn-${i}-ci`)?.classList.toggle('prendido', gp.buttons[1]?.pressed); 
-        document.getElementById(`btn-${i}-sq`)?.classList.toggle('prendido', gp.buttons[2]?.pressed); 
-        document.getElementById(`btn-${i}-tr`)?.classList.toggle('prendido', gp.buttons[3]?.pressed); 
     }
     requestAnimationFrame(loopTestMandos);
 }
